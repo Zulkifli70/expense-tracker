@@ -7,9 +7,9 @@ const props = defineProps<{
 }>();
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString("en-US", {
+  return value.toLocaleString("id-ID", {
     style: "currency",
-    currency: "USD",
+    currency: "IDR",
     maximumFractionDigits: 0,
   });
 }
@@ -18,18 +18,20 @@ const baseStats = [
   {
     title: "Total Balance",
     icon: "i-lucide-wallet",
-    minValue: 400,
-    maxValue: 1000,
+    minValue: 4000000,
+    maxValue: 10000000,
     minVariation: -15,
     maxVariation: 25,
+    formatter: formatCurrency,
   },
   {
     title: "Current Spending",
     icon: "i-lucide-shopping-cart",
-    minValue: 1000,
-    maxValue: 2000,
+    minValue: 100000,
+    maxValue: 4000000,
     minVariation: -10,
     maxVariation: 20,
+    formatter: formatCurrency,
   },
   {
     title: "Largest Expense (Today)",
