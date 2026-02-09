@@ -83,7 +83,7 @@ const columns: TableColumn<Sale>[] = [
   },
   {
     accessorKey: "email",
-    header: "Email",
+    header: "Spend",
   },
   {
     accessorKey: "amount",
