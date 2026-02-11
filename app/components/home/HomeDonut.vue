@@ -8,10 +8,10 @@ type DonutDataRecord = {
 };
 
 const data: DonutDataRecord[] = [
-  { label: "Food", amount: 320, color: "#0EA5E9" },
-  { label: "Transport", amount: 180, color: "#22C55E" },
-  { label: "Utilities", amount: 140, color: "#F59E0B" },
-  { label: "Other", amount: 90, color: "#A855F7" },
+  { label: "Food", amount: 320000, color: "#0EA5E9" },
+  { label: "Transport", amount: 180000, color: "#22C55E" },
+  { label: "Utilities", amount: 240000, color: "#F59E0B" },
+  { label: "Other", amount: 90000, color: "#A855F7" },
 ];
 
 const value = (d: DonutDataRecord) => d.amount;
@@ -21,6 +21,12 @@ const total = computed(() =>
   data.reduce((sum, record) => sum + record.amount, 0),
 );
 
+const formatNumber = new Intl.NumberFormat("en", {
+  style: "currency",
+  currency: "IDR",
+  maximumFractionDigits: 0,
+}).format;
+
 const hoveredSlice = ref<DonutDataRecord | null>(null);
 
 const centerLabel = computed(() =>
@@ -28,7 +34,9 @@ const centerLabel = computed(() =>
 );
 
 const centerSubLabel = computed(() =>
-  hoveredSlice.value ? String(hoveredSlice.value.amount) : `Total: ${total.value}`,
+  hoveredSlice.value
+    ? formatNumber(hoveredSlice.value.amount)
+    : `Total: ${formatNumber(total.value)}`,
 );
 
 const events = {
@@ -48,7 +56,9 @@ const events = {
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">Category Split</p>
-        <p class="text-3xl text-highlighted font-semibold">{{ total }}</p>
+        <p class="text-3xl text-highlighted font-semibold">
+          {{ formatNumber(total) }}
+        </p>
       </div>
     </template>
 
