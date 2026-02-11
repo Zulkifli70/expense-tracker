@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VisSingleContainer, VisDonut } from "@unovis/vue";
+import { VisSingleContainer, VisDonut, VisDonutSelectors } from "@unovis/vue";
 
 type DonutDataRecord = {
   label: string;
@@ -20,6 +20,27 @@ const color = (d: DonutDataRecord) => d.color;
 const total = computed(() =>
   data.reduce((sum, record) => sum + record.amount, 0),
 );
+
+const hoveredSlice = ref<DonutDataRecord | null>(null);
+
+const centerLabel = computed(() =>
+  hoveredSlice.value ? hoveredSlice.value.label : "Current Monthly Spending",
+);
+
+const centerSubLabel = computed(() =>
+  hoveredSlice.value ? String(hoveredSlice.value.amount) : `Total: ${total.value}`,
+);
+
+const events = {
+  [VisDonutSelectors.segment]: {
+    mouseenter: (arcData: { data?: DonutDataRecord }) => {
+      hoveredSlice.value = arcData?.data ?? null;
+    },
+    mouseleave: () => {
+      hoveredSlice.value = null;
+    },
+  },
+};
 </script>
 
 <template>
@@ -36,7 +57,9 @@ const total = computed(() =>
         <VisDonut
           :value="value"
           :color="color"
-          centralLabel="Current Monthly Spending"
+          :central-label="centerLabel"
+          :central-sub-label="centerSubLabel"
+          :events="events"
         />
       </VisSingleContainer>
     </div>
