@@ -2,6 +2,7 @@
 import { sub } from "date-fns";
 import type { DropdownMenuItem } from "@nuxt/ui";
 import type { Period, Range } from "~/types";
+import HomeDonut from "~/components/home/HomeDonut.vue";
 
 const { isNotificationsSlideoverOpen } = useDashboard();
 
@@ -68,6 +69,7 @@ const period = ref<Period>("daily");
     <template #body>
       <HomeStats :period="period" :range="range" />
       <HomeChart :period="period" :range="range" />
+      <HomeDonut />
       <HomeSales :period="period" :range="range" />
     </template>
   </UDashboardPanel>
