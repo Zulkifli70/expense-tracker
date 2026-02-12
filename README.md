@@ -1,64 +1,128 @@
-# Nuxt Dashboard Template
+﻿# Expense Tracker
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+A personal finance dashboard application to record transactions, monitor monthly budget limits, and view spending insights in one place.
 
-Get started with the Nuxt dashboard template with multiple pages, collapsible sidebar, keyboard shortcuts, light & dark mode, command palette and more, powered by [Nuxt UI](https://ui.nuxt.com).
+[![Nuxt](https://img.shields.io/badge/Nuxt-4.x-00DC82?logo=nuxt.js&logoColor=white)](https://nuxt.com)
+[![Nuxt UI](https://img.shields.io/badge/UI-Nuxt%20UI-00DC82)](https://ui.nuxt.com)
+[![MongoDB](https://img.shields.io/badge/Database-MongoDB-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com)
+[![Node](https://img.shields.io/badge/Node-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org)
 
-- [Live demo](https://dashboard-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+## Live Demo
 
-<a href="https://dashboard-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/dashboard-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png">
-    <img alt="Nuxt Dashboard Template" src="https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png">
-  </picture>
-</a>
+- https://zulk-expense.vercel.app/
 
-> The dashboard template for Vue is on https://github.com/nuxt-ui-templates/dashboard-vue.
+## Key Features
 
-## Quick Start
+- Financial dashboard with balance summary, spending trends, and budget progress.
+- Quick actions for `Add Balance`, `Add Expense`, and budget limit updates.
+- Full transaction management: list, filter, search, detail view, edit, delete, and CSV export.
+- Reports page with spending insights (monthly/quarterly/yearly) and end-of-month projection.
+- In-app notifications for budget milestones and transaction activity.
+- Demo seed data to run the app with realistic sample records.
 
-```bash [Terminal]
-npm create nuxt@latest -- -t github:nuxt-ui-templates/dashboard
-```
+## Tech Stack
 
-## Deploy your own
+- Framework: Nuxt 4 (Vue 3 + TypeScript)
+- UI: Nuxt UI + Tailwind CSS
+- Database: MongoDB
+- Validation: Zod
+- Charts/Visualization: Unovis
+- Utilities: VueUse, date-fns
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=dashboard&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fdashboard&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fdashboard-dark.png&demo-url=https%3A%2F%2Fdashboard-template.nuxt.dev%2F&demo-title=Nuxt%20Dashboard%20Template&demo-description=A%20dashboard%20template%20with%20multi-column%20layout%20for%20building%20sophisticated%20admin%20interfaces.)
+## Run Locally
 
-## Setup
+### 1. Prerequisites
 
-Make sure to install the dependencies:
+- Node.js `20.x`
+- pnpm (recommended) or npm
+- MongoDB instance (Atlas/local)
+
+### 2. Install dependencies
 
 ```bash
 pnpm install
 ```
 
-## Development Server
+### 3. Configure environment variables
 
-Start the development server on `http://localhost:3000`:
+Copy the example env file:
+
+```bash
+cp .env.example .env
+```
+
+Then provide at least these values in `.env`:
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+MONGODB_DB=ExpensesData
+MONGODB_DEFAULT_USER_ID=demo-user
+```
+
+### 4. Prepare database indexes (recommended)
+
+```bash
+pnpm db:indexes
+```
+
+### 5. Seed demo data (optional)
+
+```bash
+pnpm db:seed-home
+```
+
+### 6. Start the development server
 
 ```bash
 pnpm dev
 ```
 
-## Production
+The app will run at `http://localhost:3000`.
 
-Build the application for production:
+## Scripts
 
-```bash
-pnpm build
+- `pnpm dev` - Start development server
+- `pnpm build` - Build for production
+- `pnpm preview` - Preview production build
+- `pnpm lint` - Run ESLint
+- `pnpm typecheck` - Run Nuxt/Vue type checking
+- `pnpm db:indexes` - Create MongoDB collections and indexes
+- `pnpm db:seed-home` - Seed demo home/transaction data
+
+## Project Structure (Brief)
+
+```txt
+app/
+  components/      # Reusable UI components
+  pages/           # App pages (dashboard, transactions, reports, settings)
+server/
+  api/             # API endpoints (home, transactions, members, notifications, etc.)
+  utils/           # Server utilities (MongoDB connector)
+scripts/
+  create-indexes.mjs
+  seed-home-demo.mjs
 ```
 
-Locally preview production build:
+## API Endpoints (Summary)
 
-```bash
-pnpm preview
-```
+- `GET /api/home`
+- `POST /api/home/balance`
+- `POST /api/home/expenses`
+- `PATCH /api/home/budget-limit`
+- `GET /api/transactions`
+- `GET /api/transactions/:id`
+- `PATCH /api/transactions/:id`
+- `DELETE /api/transactions/:id`
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Deployment
 
-## Renovate integration
+This project is deployed on Vercel. To deploy your own instance:
 
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+1. Push the repository to your Git provider.
+2. Import the project into Vercel.
+3. Add the same environment variables as in `.env`.
+4. Use Node.js `20.x` for the build runtime.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
