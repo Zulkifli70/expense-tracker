@@ -1,65 +1,80 @@
 <script setup lang="ts">
-import { h, resolveComponent } from "vue";
+import { h } from "vue";
 import type { TableColumn } from "@nuxt/ui";
-import type { Period, Range, Sale } from "~/types";
+import type { Period, Range } from "~/types";
 
-const props = defineProps<{
+defineProps<{
   period: Period;
   range: Range;
 }>();
 
-const UBadge = resolveComponent("UBadge");
+type ExpenseRow = {
+  id: string;
+  date: string;
+  expenseType: string;
+  amount: number;
+  description: string;
+};
 
-const sampleEmails = [
-  "james.anderson@example.com",
-  "mia.white@example.com",
-  "william.brown@example.com",
-  "emma.davis@example.com",
-  "ethan.harris@example.com",
-];
+const { currentSpending } = useHomeFinance();
 
-const { data } = await useAsyncData(
-  "sales",
-  async () => {
-    const sales: Sale[] = [];
-    const currentDate = new Date();
+const data = computed<ExpenseRow[]>(() => {
+  const dateNow = new Date("2026-02-12T10:00:00.000Z");
+  const types = [
+    { label: "Food", ratio: 0.17, description: "Meals and beverages" },
+    {
+      label: "Transportation",
+      ratio: 0.12,
+      description: "Ride and daily commute",
+    },
+    {
+      label: "Groceries",
+      ratio: 0.26,
+      description: "Household and daily needs",
+    },
+    {
+      label: "Utilities",
+      ratio: 0.29,
+      description: "Internet and monthly utilities",
+    },
+    { label: "Other", ratio: 0.16, description: "Other operational spending" },
+  ];
 
-    for (let i = 0; i < 5; i++) {
-      const hoursAgo = randomInt(0, 48);
-      const date = new Date(currentDate.getTime() - hoursAgo * 3600000);
+  let used = 0;
 
-      sales.push({
-        id: (4600 - i).toString(),
-        date: date.toISOString(),
-        status: randomFrom(["paid", "failed", "refunded"]),
-        email: randomFrom(sampleEmails),
-        amount: randomInt(100, 1000),
-      });
-    }
+  return types.map((item, index) => {
+    const amount =
+      index === types.length - 1
+        ? Math.max(currentSpending.value - used, 0)
+        : Math.round(currentSpending.value * item.ratio);
 
-    return sales.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
-  },
-  {
-    watch: [() => props.period, () => props.range],
-    default: () => [],
-  },
-);
+    used += amount;
 
-const columns: TableColumn<Sale>[] = [
+    return {
+      id: `EX-${String(index + 1).padStart(3, "0")}`,
+      date: new Date(
+        dateNow.getTime() - index * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      expenseType: item.label,
+      amount,
+      description: item.description,
+    };
+  });
+});
+
+const columns: TableColumn<ExpenseRow>[] = [
   {
     accessorKey: "id",
     header: "ID",
-    cell: ({ row }) => `#${row.getValue("id")}`,
   },
   {
     accessorKey: "date",
     header: "Date",
     cell: ({ row }) => {
       return new Date(row.getValue("date")).toLocaleString("id-ID", {
-        day: "numeric",
+        day: "2-digit",
         month: "short",
+        year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
@@ -67,37 +82,27 @@ const columns: TableColumn<Sale>[] = [
     },
   },
   {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const color = {
-        paid: "success" as const,
-        failed: "error" as const,
-        refunded: "neutral" as const,
-      }[row.getValue("status") as string];
-
-      return h(UBadge, { class: "capitalize", variant: "subtle", color }, () =>
-        row.getValue("status"),
-      );
-    },
-  },
-  {
-    accessorKey: "email",
-    header: "Spend",
+    accessorKey: "expenseType",
+    header: "Expense Type",
   },
   {
     accessorKey: "amount",
     header: () => h("div", { class: "text-right" }, "Amount"),
     cell: ({ row }) => {
-      const amount = Number.parseFloat(row.getValue("amount"));
+      const amount = Number(row.getValue("amount"));
 
       const formatted = new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
+        maximumFractionDigits: 0,
       }).format(amount);
 
       return h("div", { class: "text-right font-medium" }, formatted);
     },
+  },
+  {
+    accessorKey: "description",
+    header: "Description",
   },
 ];
 </script>

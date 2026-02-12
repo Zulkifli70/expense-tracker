@@ -6,64 +6,12 @@ const props = defineProps<{
   range: Range;
 }>();
 
-function formatCurrency(value: number): string {
-  return value.toLocaleString("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  });
-}
+const { buildStats } = useHomeFinance();
 
-const baseStats = [
-  {
-    title: "Total Balance",
-    icon: "i-lucide-wallet",
-    minValue: 4000000,
-    maxValue: 10000000,
-    minVariation: -15,
-    maxVariation: 25,
-    formatter: formatCurrency,
-  },
-  {
-    title: "Current Spending",
-    icon: "i-lucide-shopping-cart",
-    minValue: 100000,
-    maxValue: 4000000,
-    minVariation: -10,
-    maxVariation: 20,
-    formatter: formatCurrency,
-  },
-  {
-    title: "Largest Expense (Today)",
-    icon: "i-lucide-circle-dollar-sign",
-    minValue: 200000,
-    maxValue: 500000,
-    minVariation: -20,
-    maxVariation: 30,
-    formatter: formatCurrency,
-  },
-];
-
-const { data: stats } = await useAsyncData<Stat[]>(
-  "stats",
-  async () => {
-    return baseStats.map((stat) => {
-      const value = randomInt(stat.minValue, stat.maxValue);
-      const variation = randomInt(stat.minVariation, stat.maxVariation);
-
-      return {
-        title: stat.title,
-        icon: stat.icon,
-        value: stat.formatter ? stat.formatter(value) : value,
-        variation,
-      };
-    });
-  },
-  {
-    watch: [() => props.period, () => props.range],
-    default: () => [],
-  },
-);
+const stats = computed<Stat[]>(() => {
+  void props.range;
+  return buildStats(props.period);
+});
 </script>
 
 <template>
