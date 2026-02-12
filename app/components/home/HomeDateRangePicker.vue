@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { DateFormatter, getLocalTimeZone, CalendarDate, today } from '@internationalized/date'
+import { endOfDay, startOfDay } from 'date-fns'
 import type { Range } from '~/types'
 
 const df = new DateFormatter('en-US', {
@@ -9,6 +10,7 @@ const df = new DateFormatter('en-US', {
 const selected = defineModel<Range>({ required: true })
 
 const ranges = [
+  { label: 'This month', thisMonth: true },
   { label: 'Last 7 days', days: 7 },
   { label: 'Last 14 days', days: 14 },
   { label: 'Last 30 days', days: 30 },
@@ -32,19 +34,26 @@ const calendarRange = computed({
   }),
   set: (newValue: { start: CalendarDate | null, end: CalendarDate | null }) => {
     selected.value = {
-      start: newValue.start ? newValue.start.toDate(getLocalTimeZone()) : new Date(),
-      end: newValue.end ? newValue.end.toDate(getLocalTimeZone()) : new Date()
+      start: newValue.start ? startOfDay(newValue.start.toDate(getLocalTimeZone())) : startOfDay(new Date()),
+      end: newValue.end ? endOfDay(newValue.end.toDate(getLocalTimeZone())) : endOfDay(new Date())
     }
   }
 })
 
-const isRangeSelected = (range: { days?: number, months?: number, years?: number }) => {
+const isRangeSelected = (range: { days?: number, months?: number, years?: number, thisMonth?: boolean }) => {
   if (!selected.value.start || !selected.value.end) return false
 
   const currentDate = today(getLocalTimeZone())
   let startDate = currentDate.copy()
 
-  if (range.days) {
+  if (range.thisMonth) {
+    const now = new Date()
+    const start = toCalendarDate(new Date(now.getFullYear(), now.getMonth(), 1))
+    const end = toCalendarDate(now)
+    const selectedStart = toCalendarDate(selected.value.start)
+    const selectedEnd = toCalendarDate(selected.value.end)
+    return selectedStart.compare(start) === 0 && selectedEnd.compare(end) === 0
+  } else if (range.days) {
     startDate = startDate.subtract({ days: range.days })
   } else if (range.months) {
     startDate = startDate.subtract({ months: range.months })
@@ -58,7 +67,16 @@ const isRangeSelected = (range: { days?: number, months?: number, years?: number
   return selectedStart.compare(startDate) === 0 && selectedEnd.compare(currentDate) === 0
 }
 
-const selectRange = (range: { days?: number, months?: number, years?: number }) => {
+const selectRange = (range: { days?: number, months?: number, years?: number, thisMonth?: boolean }) => {
+  if (range.thisMonth) {
+    const now = new Date()
+    selected.value = {
+      start: startOfDay(new Date(now.getFullYear(), now.getMonth(), 1)),
+      end: endOfDay(now)
+    }
+    return
+  }
+
   const endDate = today(getLocalTimeZone())
   let startDate = endDate.copy()
 
@@ -71,8 +89,8 @@ const selectRange = (range: { days?: number, months?: number, years?: number }) 
   }
 
   selected.value = {
-    start: startDate.toDate(getLocalTimeZone()),
-    end: endDate.toDate(getLocalTimeZone())
+    start: startOfDay(startDate.toDate(getLocalTimeZone())),
+    end: endOfDay(endDate.toDate(getLocalTimeZone()))
   }
 }
 </script>

@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import {
-  eachDayOfInterval,
-  eachWeekOfInterval,
-  eachMonthOfInterval,
   format,
 } from "date-fns";
 import {
@@ -13,16 +10,15 @@ import {
   VisCrosshair,
   VisTooltip,
 } from "@unovis/vue";
-import type { Period, Range } from "~/types";
+import type { HomeChartPoint, Period } from "~/types";
 
 const cardRef = useTemplateRef<HTMLElement | null>("cardRef");
 
 const props = defineProps<{
   period: Period;
-  range: Range;
+  chart: HomeChartPoint[];
+  total: number;
 }>();
-
-const { currentSpending } = useHomeFinance();
 
 type DataRecord = {
   date: Date;
@@ -31,55 +27,18 @@ type DataRecord = {
 
 const { width } = useElementSize(cardRef);
 
-const data = ref<DataRecord[]>([]);
-
-watch(
-  [() => props.period, () => props.range, () => currentSpending.value],
-  () => {
-    const dates = (
-      {
-        daily: eachDayOfInterval,
-        weekly: eachWeekOfInterval,
-        monthly: eachMonthOfInterval,
-      } as Record<Period, typeof eachDayOfInterval>
-    )[props.period](props.range);
-
-    if (!dates.length) {
-      data.value = [];
-      return;
-    }
-
-    const totalForRange = Math.round(
-      currentSpending.value * Math.max(dates.length / 8, 0.4),
-    );
-
-    const weights = dates.map((_date, index) => 1 + ((index * 13) % 7) / 10);
-    const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
-
-    let used = 0;
-
-    data.value = dates.map((date, index) => {
-      const amount =
-        index === dates.length - 1
-          ? Math.max(totalForRange - used, 0)
-          : Math.round((totalForRange * weights[index]) / weightSum);
-
-      used += amount;
-
-      return {
-        date,
-        amount,
-      };
-    });
-  },
-  { immediate: true },
+const data = computed<DataRecord[]>(() =>
+  props.chart.map((item) => ({
+    date: new Date(item.date),
+    amount: item.amount,
+  })),
 );
 
 const x = (_: DataRecord, i: number) => i;
 const y = (d: DataRecord) => d.amount;
 
 const total = computed(() =>
-  data.value.reduce((acc: number, { amount }) => acc + amount, 0),
+  props.total || data.value.reduce((acc: number, { amount }) => acc + amount, 0),
 );
 
 const formatNumber = new Intl.NumberFormat("id-ID", {
@@ -97,11 +56,13 @@ const formatDate = (date: Date): string => {
 };
 
 const xTicks = (i: number) => {
-  if (i === 0 || i === data.value.length - 1 || !data.value[i]) {
+  const point = data.value[i];
+
+  if (i === 0 || i === data.value.length - 1 || !point) {
     return "";
   }
 
-  return formatDate(data.value[i].date);
+  return formatDate(point.date);
 };
 
 const template = (d: DataRecord) =>

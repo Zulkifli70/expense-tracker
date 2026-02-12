@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { VisSingleContainer, VisDonut, VisDonutSelectors } from "@unovis/vue";
+import type { HomeCategorySummary } from "~/types";
 
 type DonutDataRecord = {
   label: string;
@@ -7,9 +8,11 @@ type DonutDataRecord = {
   color: string;
 };
 
-const { categories } = useHomeFinance();
+const props = defineProps<{
+  categories: HomeCategorySummary[];
+}>();
 
-const data = computed<DonutDataRecord[]>(() => categories.value);
+const data = computed<DonutDataRecord[]>(() => props.categories || []);
 
 const value = (d: DonutDataRecord) => d.amount;
 const color = (d: DonutDataRecord) => d.color;

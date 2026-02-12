@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { Period, Range, Stat } from "~/types";
+import type { HomeStat } from "~/types";
+import { formatIDRCurrency } from "~/composables/useHomeFinance";
 
 const props = defineProps<{
-  period: Period;
-  range: Range;
+  stats: HomeStat[];
 }>();
 
-const { buildStats } = useHomeFinance();
-
-const stats = computed<Stat[]>(() => {
-  void props.range;
-  return buildStats(props.period);
-});
+const stats = computed(() =>
+  props.stats.map((item) => ({
+    ...item,
+    valueFormatted: formatIDRCurrency(item.value),
+  })),
+);
 </script>
 
 <template>
@@ -21,7 +21,7 @@ const stats = computed<Stat[]>(() => {
       :key="index"
       :icon="stat.icon"
       :title="stat.title"
-      to="/customers"
+      to="/reports"
       variant="subtle"
       :ui="{
         container: 'gap-y-1.5',
@@ -34,7 +34,7 @@ const stats = computed<Stat[]>(() => {
     >
       <div class="flex items-center gap-2">
         <span class="text-2xl font-semibold text-highlighted">
-          {{ stat.value }}
+          {{ stat.valueFormatted }}
         </span>
 
         <UBadge

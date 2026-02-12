@@ -1,5 +1,17 @@
 <script setup lang="ts">
-const { currentSpending, monthlyLimit } = useHomeFinance();
+import type { HomeApiResponse } from "~/types";
+
+const props = defineProps<{
+  budget?: HomeApiResponse["budget"];
+  currentSpending: number;
+}>();
+
+const emit = defineEmits<{
+  editLimit: [];
+}>();
+
+const monthlyLimit = computed(() => props.budget?.limit || 0);
+const currentSpending = computed(() => props.currentSpending || 0);
 
 const progress = computed(() =>
   Math.min(
@@ -75,6 +87,15 @@ const formatCurrency = new Intl.NumberFormat("id-ID", {
       </div>
 
       <div class="text-right">
+        <UButton
+          label="Edit Limit"
+          color="neutral"
+          variant="outline"
+          size="xs"
+          class="mb-3"
+          @click="emit('editLimit')"
+        />
+
         <p class="text-4xl font-bold tracking-tight text-highlighted">
           {{ formatCurrency(currentSpending) }}
         </p>
