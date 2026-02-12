@@ -7,21 +7,18 @@ type DonutDataRecord = {
   color: string;
 };
 
-const data: DonutDataRecord[] = [
-  { label: "Food", amount: 320000, color: "#0EA5E9" },
-  { label: "Transport", amount: 180000, color: "#22C55E" },
-  { label: "Utilities", amount: 240000, color: "#F59E0B" },
-  { label: "Other", amount: 90000, color: "#A855F7" },
-];
+const { categories } = useHomeFinance();
+
+const data = computed<DonutDataRecord[]>(() => categories.value);
 
 const value = (d: DonutDataRecord) => d.amount;
 const color = (d: DonutDataRecord) => d.color;
 
 const total = computed(() =>
-  data.reduce((sum, record) => sum + record.amount, 0),
+  data.value.reduce((sum, record) => sum + record.amount, 0),
 );
 
-const formatNumber = new Intl.NumberFormat("en", {
+const formatNumber = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
   maximumFractionDigits: 0,

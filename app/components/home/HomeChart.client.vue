@@ -22,6 +22,8 @@ const props = defineProps<{
   range: Range;
 }>();
 
+const { currentSpending } = useHomeFinance();
+
 type DataRecord = {
   date: Date;
   amount: number;
@@ -32,7 +34,7 @@ const { width } = useElementSize(cardRef);
 const data = ref<DataRecord[]>([]);
 
 watch(
-  [() => props.period, () => props.range],
+  [() => props.period, () => props.range, () => currentSpending.value],
   () => {
     const dates = (
       {
@@ -42,13 +44,33 @@ watch(
       } as Record<Period, typeof eachDayOfInterval>
     )[props.period](props.range);
 
-    const min = 1000;
-    const max = 10000;
+    if (!dates.length) {
+      data.value = [];
+      return;
+    }
 
-    data.value = dates.map((date) => ({
-      date,
-      amount: Math.floor(Math.random() * (max - min + 1)) + min,
-    }));
+    const totalForRange = Math.round(
+      currentSpending.value * Math.max(dates.length / 8, 0.4),
+    );
+
+    const weights = dates.map((_date, index) => 1 + ((index * 13) % 7) / 10);
+    const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+
+    let used = 0;
+
+    data.value = dates.map((date, index) => {
+      const amount =
+        index === dates.length - 1
+          ? Math.max(totalForRange - used, 0)
+          : Math.round((totalForRange * weights[index]) / weightSum);
+
+      used += amount;
+
+      return {
+        date,
+        amount,
+      };
+    });
   },
   { immediate: true },
 );
@@ -60,7 +82,7 @@ const total = computed(() =>
   data.value.reduce((acc: number, { amount }) => acc + amount, 0),
 );
 
-const formatNumber = new Intl.NumberFormat("en", {
+const formatNumber = new Intl.NumberFormat("id-ID", {
   style: "currency",
   currency: "IDR",
   maximumFractionDigits: 0,
