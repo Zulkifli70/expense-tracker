@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { endOfDay, startOfMonth } from "date-fns";
 import * as z from "zod";
 import type { DropdownMenuItem, FormSubmitEvent } from "@nuxt/ui";
 import type { HomeApiResponse, Period, Range } from "~/types";
@@ -9,6 +8,20 @@ import { formatIDRCurrency } from "~/composables/useHomeFinance";
 const { isNotificationsSlideoverOpen, unreadNotificationsCount, pushNotification } =
   useDashboard();
 const toast = useToast();
+const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+function getDefaultRangeByJakartaNow() {
+  const now = new Date();
+  const jakartaNow = new Date(now.getTime() + JAKARTA_OFFSET_MS);
+  const year = jakartaNow.getUTCFullYear();
+  const month = jakartaNow.getUTCMonth();
+  const day = jakartaNow.getUTCDate();
+
+  return {
+    start: new Date(Date.UTC(year, month, 1, 0, 0, 0, 0) - JAKARTA_OFFSET_MS),
+    end: new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - JAKARTA_OFFSET_MS),
+  };
+}
 
 function toDateTimeLocalInput(date: Date) {
   const timezoneOffsetMs = date.getTimezoneOffset() * 60 * 1000;
@@ -22,10 +35,7 @@ const loadingBalance = ref(false);
 const loadingExpense = ref(false);
 const loadingLimit = ref(false);
 
-const range = shallowRef<Range>({
-  start: startOfMonth(new Date()),
-  end: endOfDay(new Date()),
-});
+const range = shallowRef<Range>(getDefaultRangeByJakartaNow());
 const period = ref<Period>("daily");
 
 const query = computed(() => ({
