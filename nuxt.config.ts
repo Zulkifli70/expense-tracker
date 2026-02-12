@@ -18,6 +18,12 @@ export default defineNuxtConfig({
     }
   },
 
+  runtimeConfig: {
+    mongodbUri: import.meta.env.MONGODB_URI || import.meta.env.MONGOURI || '',
+    mongodbDb: import.meta.env.MONGODB_DB || 'ExpensesData',
+    mongodbCustomersCollection: import.meta.env.MONGODB_CUSTOMERS_COLLECTION || 'UserData'
+  },
+
   compatibilityDate: '2024-07-11',
 
   eslint: {

@@ -1,187 +1,107 @@
-import type { User } from '~/types'
+import type { AvatarProps } from '@nuxt/ui'
+import type { H3Event } from 'h3'
+import type { ObjectId } from 'mongodb'
+import * as z from 'zod'
+import type { User, UserStatus } from '~/types'
+import { getMongoDb } from '../utils/mongodb'
 
-const customers: User[] = [{
-  id: 1,
-  name: 'Alex Smith',
-  email: 'alex.smith@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=1'
-  },
-  status: 'subscribed',
-  location: 'New York, USA'
-}, {
-  id: 2,
-  name: 'Jordan Brown',
-  email: 'jordan.brown@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=2'
-  },
-  status: 'unsubscribed',
-  location: 'London, UK'
-}, {
-  id: 3,
-  name: 'Taylor Green',
-  email: 'taylor.green@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=3'
-  },
-  status: 'bounced',
-  location: 'Paris, France'
-}, {
-  id: 4,
-  name: 'Morgan White',
-  email: 'morgan.white@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=4'
-  },
-  status: 'subscribed',
-  location: 'Berlin, Germany'
-}, {
-  id: 5,
-  name: 'Casey Gray',
-  email: 'casey.gray@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=5'
-  },
-  status: 'subscribed',
-  location: 'Tokyo, Japan'
-}, {
-  id: 6,
-  name: 'Jamie Johnson',
-  email: 'jamie.johnson@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=6'
-  },
-  status: 'subscribed',
-  location: 'Sydney, Australia'
-}, {
-  id: 7,
-  name: 'Riley Davis',
-  email: 'riley.davis@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=7'
-  },
-  status: 'subscribed',
-  location: 'New York, USA'
-}, {
-  id: 8,
-  name: 'Kelly Wilson',
-  email: 'kelly.wilson@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=8'
-  },
-  status: 'subscribed',
-  location: 'London, UK'
-}, {
-  id: 9,
-  name: 'Drew Moore',
-  email: 'drew.moore@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=9'
-  },
-  status: 'bounced',
-  location: 'Paris, France'
-}, {
-  id: 10,
-  name: 'Jordan Taylor',
-  email: 'jordan.taylor@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=10'
-  },
-  status: 'subscribed',
-  location: 'Berlin, Germany'
-}, {
-  id: 11,
-  name: 'Morgan Anderson',
-  email: 'morgan.anderson@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=11'
-  },
-  status: 'subscribed',
-  location: 'Tokyo, Japan'
-}, {
-  id: 12,
-  name: 'Casey Thomas',
-  email: 'casey.thomas@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=12'
-  },
-  status: 'unsubscribed',
-  location: 'Sydney, Australia'
-}, {
-  id: 13,
-  name: 'Jamie Jackson',
-  email: 'jamie.jackson@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=13'
-  },
-  status: 'unsubscribed',
-  location: 'New York, USA'
-}, {
-  id: 14,
-  name: 'Riley White',
-  email: 'riley.white@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=14'
-  },
-  status: 'unsubscribed',
-  location: 'London, UK'
-}, {
-  id: 15,
-  name: 'Kelly Harris',
-  email: 'kelly.harris@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=15'
-  },
-  status: 'subscribed',
-  location: 'Paris, France'
-}, {
-  id: 16,
-  name: 'Drew Martin',
-  email: 'drew.martin@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=16'
-  },
-  status: 'subscribed',
-  location: 'Berlin, Germany'
-}, {
-  id: 17,
-  name: 'Alex Thompson',
-  email: 'alex.thompson@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=17'
-  },
-  status: 'unsubscribed',
-  location: 'Tokyo, Japan'
-}, {
-  id: 18,
-  name: 'Jordan Garcia',
-  email: 'jordan.garcia@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=18'
-  },
-  status: 'subscribed',
-  location: 'Sydney, Australia'
-}, {
-  id: 19,
-  name: 'Taylor Rodriguez',
-  email: 'taylor.rodriguez@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=19'
-  },
-  status: 'bounced',
-  location: 'New York, USA'
-}, {
-  id: 20,
-  name: 'Morgan Lopez',
-  email: 'morgan.lopez@example.com',
-  avatar: {
-    src: 'https://i.pravatar.cc/128?u=20'
-  },
-  status: 'subscribed',
-  location: 'London, UK'
-}]
+type CustomerDocument = {
+  _id?: ObjectId
+  id?: number
+  name?: string
+  email?: string
+  status?: UserStatus
+  location?: string
+  avatar?: AvatarProps
+}
 
-export default eventHandler(async () => {
-  return customers
+const createCustomerSchema = z.object({
+  name: z.string().min(2, 'Name is too short'),
+  email: z.string().email('Invalid email'),
+  status: z.enum(['subscribed', 'unsubscribed', 'bounced']).optional(),
+  location: z.string().min(2).optional()
+})
+
+function normalizeCustomer(doc: CustomerDocument, fallbackId: number): User {
+  return {
+    id: doc.id ?? fallbackId,
+    name: doc.name ?? 'Unknown User',
+    email: doc.email ?? `unknown-${fallbackId}@example.com`,
+    status: doc.status ?? 'subscribed',
+    location: doc.location ?? 'Unknown',
+    avatar: doc.avatar
+  }
+}
+
+async function getCollection() {
+  const db = await getMongoDb()
+  const config = useRuntimeConfig()
+  return db.collection<CustomerDocument>(config.mongodbCustomersCollection || 'UserData')
+}
+
+async function listCustomers() {
+  const collection = await getCollection()
+  const docs = await collection.find().sort({ id: 1, _id: 1 }).toArray()
+
+  return docs.map((doc, index) => normalizeCustomer(doc, index + 1))
+}
+
+async function createCustomer(event: H3Event) {
+  const collection = await getCollection()
+  const body = await readBody(event)
+  const parsed = createCustomerSchema.safeParse(body)
+
+  if (!parsed.success) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: parsed.error.issues[0]?.message || 'Invalid payload'
+    })
+  }
+
+  const payload = parsed.data
+  const email = payload.email.trim().toLowerCase()
+  const existing = await collection.findOne({
+    email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+  })
+
+  if (existing) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'Email already exists'
+    })
+  }
+
+  const latestCustomer = await collection.find().sort({ id: -1, _id: -1 }).limit(1).next()
+  const currentId = typeof latestCustomer?.id === 'number' ? latestCustomer.id : 0
+  const nextId = currentId + 1
+
+  const customer: User = {
+    id: nextId,
+    name: payload.name.trim(),
+    email,
+    status: payload.status ?? 'subscribed',
+    location: payload.location?.trim() || 'Unknown'
+  }
+
+  await collection.insertOne(customer)
+  setResponseStatus(event, 201)
+
+  return customer
+}
+
+export default eventHandler(async (event) => {
+  const method = getMethod(event)
+
+  if (method === 'GET') {
+    return listCustomers()
+  }
+
+  if (method === 'POST') {
+    return createCustomer(event)
+  }
+
+  throw createError({
+    statusCode: 405,
+    statusMessage: 'Method not allowed'
+  })
 })

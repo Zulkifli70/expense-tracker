@@ -16,9 +16,35 @@ const state = reactive<Partial<Schema>>({
 })
 
 const toast = useToast()
+const loading = ref(false)
+
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  toast.add({ title: 'Success', description: `New customer ${event.data.name} added`, color: 'success' })
-  open.value = false
+  loading.value = true
+
+  try {
+    await $fetch('/api/customers', {
+      method: 'POST',
+      body: event.data
+    })
+
+    toast.add({
+      title: 'Success',
+      description: `New customer ${event.data.name} added`,
+      color: 'success'
+    })
+    open.value = false
+    state.name = undefined
+    state.email = undefined
+    await refreshNuxtData()
+  } catch (error: any) {
+    toast.add({
+      title: 'Failed',
+      description: error?.data?.statusMessage || 'Failed to create customer',
+      color: 'error'
+    })
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -51,6 +77,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             color="primary"
             variant="solid"
             type="submit"
+            :loading="loading"
           />
         </div>
       </UForm>
