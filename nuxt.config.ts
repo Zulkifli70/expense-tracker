@@ -19,16 +19,18 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    mongodbUri: process.env.MONGODB_URI || process.env.MONGOURI || '',
-    mongodbDb: process.env.MONGODB_DB || 'ExpensesData',
-    mongodbCustomersCollection: process.env.MONGODB_CUSTOMERS_COLLECTION || 'UserData',
-    mongodbUsersCollection: process.env.MONGODB_USERS_COLLECTION || 'users',
-    mongodbAccountsCollection: process.env.MONGODB_ACCOUNTS_COLLECTION || 'accounts',
-    mongodbCategoriesCollection: process.env.MONGODB_CATEGORIES_COLLECTION || 'categories',
-    mongodbTransactionsCollection: process.env.MONGODB_TRANSACTIONS_COLLECTION || 'transactions',
-    mongodbBudgetsCollection: process.env.MONGODB_BUDGETS_COLLECTION || 'budgets',
-    mongodbBudgetUsagesCollection: process.env.MONGODB_BUDGET_USAGES_COLLECTION || 'budget_usages',
-    mongodbDefaultUserId: process.env.MONGODB_DEFAULT_USER_ID || 'demo-user'
+    mongodbUri: import.meta.env.MONGODB_URI || import.meta.env.MONGOURI || '',
+    mongodbDb: import.meta.env.MONGODB_DB || 'ExpensesData',
+    mongodbCustomersCollection: import.meta.env.MONGODB_CUSTOMERS_COLLECTION || 'UserData',
+    mongodbUsersCollection: import.meta.env.MONGODB_USERS_COLLECTION || 'users',
+    mongodbAccountsCollection: import.meta.env.MONGODB_ACCOUNTS_COLLECTION || 'accounts',
+    mongodbCategoriesCollection: import.meta.env.MONGODB_CATEGORIES_COLLECTION || 'categories',
+    mongodbTransactionsCollection: import.meta.env.MONGODB_TRANSACTIONS_COLLECTION || 'transactions',
+    mongodbBudgetsCollection: import.meta.env.MONGODB_BUDGETS_COLLECTION || 'budgets',
+    mongodbBudgetUsagesCollection: import.meta.env.MONGODB_BUDGET_USAGES_COLLECTION || 'budget_usages',
+    mongodbDefaultUserId: import.meta.env.MONGODB_DEFAULT_USER_ID || 'demo-user',
+    mongodbIpFamily: import.meta.env.MONGODB_IP_FAMILY || '',
+    mongodbServerSelectionTimeoutMs: Number(import.meta.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 10000)
   },
 
   compatibilityDate: '2024-07-11',
