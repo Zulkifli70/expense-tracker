@@ -3,6 +3,7 @@ import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
 const fileRef = ref<HTMLInputElement>()
+const userProfile = useUserProfile()
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Too short'),
@@ -15,21 +16,25 @@ const profileSchema = z.object({
 type ProfileSchema = z.output<typeof profileSchema>
 
 const profile = reactive<Partial<ProfileSchema>>({
-  name: 'Benjamin Canac',
-  email: 'ben@nuxtlabs.com',
-  username: 'benjamincanac',
-  avatar: undefined,
-  bio: undefined
+  name: userProfile.value.name,
+  email: userProfile.value.email,
+  username: userProfile.value.username,
+  avatar: userProfile.value.avatar,
+  bio: userProfile.value.bio
 })
 const toast = useToast()
 async function onSubmit(event: FormSubmitEvent<ProfileSchema>) {
+  userProfile.value = {
+    ...userProfile.value,
+    ...event.data
+  }
+
   toast.add({
     title: 'Success',
     description: 'Your settings have been updated.',
     icon: 'i-lucide-check',
     color: 'success'
   })
-  console.log(event.data)
 }
 
 function onFileChange(e: Event) {

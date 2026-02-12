@@ -29,19 +29,27 @@ const colors = [
 ];
 const neutrals = ["slate", "gray", "zinc", "neutral", "stone"];
 
-const user = ref({
-  name: "Benjamin Canac",
-  avatar: {
-    src: "https://github.com/benjamincanac.png",
-    alt: "Benjamin Canac",
-  },
-});
+const userProfile = useUserProfile();
+
+const userName = computed(() => userProfile.value.name || "User");
+
+const user = computed(() => ({
+  name: userName.value,
+  avatar: userProfile.value.avatar
+    ? {
+        src: userProfile.value.avatar,
+        alt: userName.value,
+      }
+    : {
+        alt: userName.value,
+      },
+}));
 
 const items = computed<DropdownMenuItem[][]>(() => [
   [
     {
       type: "label",
-      label: user.value.name,
+      label: userName.value,
       avatar: user.value.avatar,
     },
   ],
@@ -49,6 +57,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
     {
       label: "Profile",
       icon: "i-lucide-user",
+      to: "/settings",
     },
     {
       label: "Settings",
