@@ -8,22 +8,40 @@ declare global {
 
 function getRequiredMongoUri() {
   const config = useRuntimeConfig()
+  const rawUri = String(config.mongodbUri || '').trim()
+  const normalizedUri = rawUri
+    .replace(/^['"]+/, '')
+    .replace(/['"]+$/, '')
+    .trim()
 
-  if (!config.mongodbUri) {
+  if (!normalizedUri) {
     throw createError({
       statusCode: 500,
       statusMessage: 'Missing MongoDB connection string'
     })
   }
 
-  return config.mongodbUri
+  if (!normalizedUri.startsWith('mongodb://') && !normalizedUri.startsWith('mongodb+srv://')) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Invalid MongoDB connection string'
+    })
+  }
+
+  return normalizedUri
 }
 
 export function getMongoClient() {
   if (!globalThis._mongoClientPromise) {
     const mongoUri = getRequiredMongoUri()
-    const client = new MongoClient(mongoUri)
-    globalThis._mongoClientPromise = client.connect()
+    const client = new MongoClient(mongoUri, {
+      serverSelectionTimeoutMS: 10_000
+    })
+    globalThis._mongoClientPromise = client.connect().catch(async (error) => {
+      globalThis._mongoClientPromise = undefined
+      await client.close().catch(() => {})
+      throw error
+    })
   }
 
   return globalThis._mongoClientPromise
