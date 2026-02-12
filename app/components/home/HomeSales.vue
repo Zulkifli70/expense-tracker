@@ -1,68 +1,13 @@
 <script setup lang="ts">
 import { h } from "vue";
 import type { TableColumn } from "@nuxt/ui";
-import type { Period, Range } from "~/types";
+import type { HomeExpenseRow } from "~/types";
 
 defineProps<{
-  period: Period;
-  range: Range;
+  rows: HomeExpenseRow[];
 }>();
 
-type ExpenseRow = {
-  id: string;
-  date: string;
-  expenseType: string;
-  amount: number;
-  description: string;
-};
-
-const { currentSpending } = useHomeFinance();
-
-const data = computed<ExpenseRow[]>(() => {
-  const dateNow = new Date("2026-02-12T10:00:00.000Z");
-  const types = [
-    { label: "Food", ratio: 0.17, description: "Meals and beverages" },
-    {
-      label: "Transportation",
-      ratio: 0.12,
-      description: "Ride and daily commute",
-    },
-    {
-      label: "Groceries",
-      ratio: 0.26,
-      description: "Household and daily needs",
-    },
-    {
-      label: "Utilities",
-      ratio: 0.29,
-      description: "Internet and monthly utilities",
-    },
-    { label: "Other", ratio: 0.16, description: "Other operational spending" },
-  ];
-
-  let used = 0;
-
-  return types.map((item, index) => {
-    const amount =
-      index === types.length - 1
-        ? Math.max(currentSpending.value - used, 0)
-        : Math.round(currentSpending.value * item.ratio);
-
-    used += amount;
-
-    return {
-      id: `EX-${String(index + 1).padStart(3, "0")}`,
-      date: new Date(
-        dateNow.getTime() - index * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      expenseType: item.label,
-      amount,
-      description: item.description,
-    };
-  });
-});
-
-const columns: TableColumn<ExpenseRow>[] = [
+const columns: TableColumn<HomeExpenseRow>[] = [
   {
     accessorKey: "id",
     header: "ID",
@@ -78,6 +23,7 @@ const columns: TableColumn<ExpenseRow>[] = [
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
+        timeZone: "Asia/Jakarta",
       });
     },
   },
@@ -109,7 +55,7 @@ const columns: TableColumn<ExpenseRow>[] = [
 
 <template>
   <UTable
-    :data="data"
+    :data="rows"
     :columns="columns"
     class="shrink-0"
     :ui="{

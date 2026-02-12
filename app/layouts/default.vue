@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from "@nuxt/ui";
+import type { TransactionsApiResponse } from "~/types";
 
-const route = useRoute();
 const toast = useToast();
 
 const open = ref(false);
+const searchTerm = ref("");
+const searchLoading = ref(false);
+const transactionSearchItems = ref<NavigationMenuItem[]>([]);
+let searchRequestId = 0;
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const links = [
   [
@@ -18,9 +23,8 @@ const links = [
     },
     {
       label: "Transactions",
-      icon: "i-lucide-inbox",
-      to: "/inbox",
-      badge: "4",
+      icon: "i-lucide-receipt-text",
+      to: "/transactions",
       onSelect: () => {
         open.value = false;
       },
@@ -28,7 +32,7 @@ const links = [
     {
       label: "Reports",
       icon: "i-lucide-users",
-      to: "/customers",
+      to: "/reports",
       onSelect: () => {
         open.value = false;
       },
@@ -44,13 +48,6 @@ const links = [
           label: "General",
           to: "/settings",
           exact: true,
-          onSelect: () => {
-            open.value = false;
-          },
-        },
-        {
-          label: "Members",
-          to: "/settings/members",
           onSelect: () => {
             open.value = false;
           },
@@ -80,20 +77,87 @@ const groups = computed(() => [
     label: "Go to",
     items: links.flat(),
   },
-  {
-    id: "code",
-    label: "Code",
-    items: [
-      {
-        id: "source",
-        label: "View page source",
-        icon: "i-simple-icons-github",
-        to: `https://github.com/nuxt-ui-templates/dashboard/blob/main/app/pages${route.path === "/" ? "/index" : route.path}.vue`,
-        target: "_blank",
-      },
-    ],
-  },
+  ...(searchTerm.value.trim().length >= 2
+    ? [{
+        id: "transactions-search",
+        label: "Transactions",
+        ignoreFilter: true,
+        items: transactionSearchItems.value,
+      }]
+    : []),
 ]);
+
+function formatAmountIDR(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(Math.abs(amount));
+}
+
+function formatTransactionDate(value: string) {
+  return new Date(value).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  });
+}
+
+watch(searchTerm, (value) => {
+  const keyword = value.trim();
+
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
+
+  if (keyword.length < 2) {
+    transactionSearchItems.value = [];
+    searchLoading.value = false;
+    return;
+  }
+
+  searchDebounceTimer = setTimeout(async () => {
+    const requestId = ++searchRequestId;
+    searchLoading.value = true;
+
+    try {
+      const response = await $fetch<TransactionsApiResponse>("/api/transactions", {
+        query: {
+          page: 1,
+          pageSize: 10,
+          search: keyword,
+          category: "all",
+          period: "all_time",
+        },
+      });
+
+      if (requestId !== searchRequestId) return;
+
+      transactionSearchItems.value = response.items.slice(0, 8).map((item) => ({
+        id: item.id,
+        label: item.description && item.description !== "-" ? item.description : item.category,
+        description: item.category,
+        suffix: `${item.amount >= 0 ? "+" : "-"}${formatAmountIDR(item.amount)} | ${formatTransactionDate(item.date)}`,
+        icon: "i-lucide-receipt-text",
+        to: `/transactions/${item.id}`,
+      }));
+    } catch {
+      if (requestId !== searchRequestId) return;
+      transactionSearchItems.value = [];
+    } finally {
+      if (requestId === searchRequestId) {
+        searchLoading.value = false;
+      }
+    }
+  }, 300);
+});
+
+onBeforeUnmount(() => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+  }
+});
 
 onMounted(async () => {
   const cookie = useCookie("cookie-consent");
@@ -167,7 +231,11 @@ onMounted(async () => {
       </template>
     </UDashboardSidebar>
 
-    <UDashboardSearch :groups="groups" />
+    <UDashboardSearch
+      v-model:search-term="searchTerm"
+      :loading="searchLoading"
+      :groups="groups"
+    />
 
     <slot />
 
