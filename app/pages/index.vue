@@ -15,6 +15,7 @@ const userProfile = useUserProfile();
 
 const now = ref<Date | null>(null);
 let clockTimer: ReturnType<typeof setInterval> | null = null;
+let clockAlignTimer: ReturnType<typeof setTimeout> | null = null;
 
 const currentTimeLabel = computed(() => {
   if (!now.value) return "--:--";
@@ -39,15 +40,30 @@ const greetingText = computed(() => {
   return `${greetingLabel.value}, ${name}`;
 });
 
-onMounted(() => {
+function startMinuteClock() {
   now.value = new Date();
-  clockTimer = setInterval(() => {
+
+  const syncToMinute = () => {
     now.value = new Date();
-  }, 1000 * 30);
+    clockTimer = setInterval(() => {
+      now.value = new Date();
+    }, 60 * 1000);
+  };
+
+  const current = new Date();
+  const msUntilNextMinute =
+    (59 - current.getSeconds()) * 1000 + (1000 - current.getMilliseconds());
+
+  clockAlignTimer = setTimeout(syncToMinute, msUntilNextMinute);
+}
+
+onMounted(() => {
+  startMinuteClock();
 });
 
 onBeforeUnmount(() => {
   if (clockTimer) clearInterval(clockTimer);
+  if (clockAlignTimer) clearTimeout(clockAlignTimer);
 });
 
 function getDefaultRangeByLocalNow() {
