@@ -408,7 +408,7 @@ async function onDeleteTransaction(row: TransactionListItem) {
             v-model="search"
             icon="i-lucide-search"
             class="lg:col-span-2"
-            placeholder="Search descriptions and categories..."
+            placeholder="Search date, description, or category..."
           />
           <USelect v-model="category" :items="categoryOptions" />
           <USelect
@@ -421,7 +421,7 @@ async function onDeleteTransaction(row: TransactionListItem) {
         </div>
         <div class="flex items-center justify-between">
           <p class="text-xs text-muted">
-            Click date/category/description/amount to open transaction details.
+            Search supports date too (example: 09, 12 Feb, 12/02, 2026-02-12).
           </p>
           <UButton
             label="Reset Filters"

@@ -36,6 +36,134 @@ const querySchema = z.object({
   period: z.enum(['all_time', 'this_month']).default('this_month')
 })
 
+const MONTH_ALIAS_MAP: Record<string, number> = {
+  jan: 1,
+  januari: 1,
+  january: 1,
+  feb: 2,
+  februari: 2,
+  february: 2,
+  mar: 3,
+  maret: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  mei: 5,
+  may: 5,
+  jun: 6,
+  juni: 6,
+  june: 6,
+  jul: 7,
+  juli: 7,
+  july: 7,
+  agu: 8,
+  ags: 8,
+  agust: 8,
+  agustus: 8,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  okt: 10,
+  oktober: 10,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  des: 12,
+  desember: 12,
+  dec: 12,
+  december: 12
+}
+
+function escapeRegex(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function buildUtcDateRange(year: number, month: number, day: number) {
+  const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0))
+  const end = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999))
+  if (
+    start.getUTCFullYear() !== year ||
+    start.getUTCMonth() !== month - 1 ||
+    start.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return { start, end }
+}
+
+function parseDateSearch(search: string): {
+  mode: 'full_date'
+  range: { start: Date, end: Date }
+} | {
+  mode: 'day_month'
+  day: number
+  month: number
+} | {
+  mode: 'day_only'
+  day: number
+} | null {
+  const raw = search.trim().toLowerCase()
+  if (!raw) return null
+
+  const dayOnlyMatch = raw.match(/^(\d{1,2})$/)
+  if (dayOnlyMatch) {
+    const day = Number(dayOnlyMatch[1])
+    if (day >= 1 && day <= 31) {
+      return { mode: 'day_only', day }
+    }
+    return null
+  }
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+  if (isoMatch) {
+    const year = Number(isoMatch[1])
+    const month = Number(isoMatch[2])
+    const day = Number(isoMatch[3])
+    const range = buildUtcDateRange(year, month, day)
+    return range ? { mode: 'full_date', range } : null
+  }
+
+  const numericMatch = raw.match(/^(\d{1,2})[/-](\d{1,2})(?:[/-](\d{2,4}))?$/)
+  if (numericMatch) {
+    const day = Number(numericMatch[1])
+    const month = Number(numericMatch[2])
+    const year = numericMatch[3]
+      ? (numericMatch[3].length === 2 ? 2000 + Number(numericMatch[3]) : Number(numericMatch[3]))
+      : null
+
+    if (year) {
+      const range = buildUtcDateRange(year, month, day)
+      return range ? { mode: 'full_date', range } : null
+    }
+
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return { mode: 'day_month', day, month }
+    }
+    return null
+  }
+
+  const textMatch = raw.match(/^(\d{1,2})\s+([a-zA-Z.]+)(?:\s+(\d{4}))?$/)
+  if (textMatch) {
+    const day = Number(textMatch[1])
+    const monthToken = textMatch[2].replace(/\./g, '')
+    const month = MONTH_ALIAS_MAP[monthToken]
+    if (!month || day < 1 || day > 31) return null
+
+    if (textMatch[3]) {
+      const year = Number(textMatch[3])
+      const range = buildUtcDateRange(year, month, day)
+      return range ? { mode: 'full_date', range } : null
+    }
+
+    return { mode: 'day_month', day, month }
+  }
+
+  return null
+}
+
 function toObjectIdString(id: ObjectId | string | undefined) {
   if (!id) return ''
   return typeof id === 'string' ? id : id.toHexString()
@@ -99,14 +227,16 @@ export default eventHandler(async (event) => {
   }
 
   if (search) {
-    const searchRegex = new RegExp(search, 'i')
+    const escapedSearch = escapeRegex(search)
+    const searchRegex = new RegExp(escapedSearch, 'i')
     const matchedCategoryIds = categoryRows
       .filter(row => searchRegex.test(row.name))
       .map(row => row._id)
       .filter((id): id is ObjectId => !!id)
+    const parsedDateSearch = parseDateSearch(search)
 
-    filter.$or = [
-      { note: { $regex: search, $options: 'i' } },
+    const orConditions: Record<string, any>[] = [
+      { note: { $regex: escapedSearch, $options: 'i' } },
       ...(matchedCategoryIds.length
         ? [{
             categoryId: {
@@ -118,6 +248,36 @@ export default eventHandler(async (event) => {
           }]
         : [])
     ]
+
+    if (parsedDateSearch?.mode === 'full_date') {
+      orConditions.push({
+        occurredAt: {
+          $gte: parsedDateSearch.range.start,
+          $lte: parsedDateSearch.range.end
+        }
+      })
+    }
+
+    if (parsedDateSearch?.mode === 'day_month') {
+      orConditions.push({
+        $expr: {
+          $and: [
+            { $eq: [{ $dayOfMonth: '$occurredAt' }, parsedDateSearch.day] },
+            { $eq: [{ $month: '$occurredAt' }, parsedDateSearch.month] }
+          ]
+        }
+      })
+    }
+
+    if (parsedDateSearch?.mode === 'day_only') {
+      orConditions.push({
+        $expr: {
+          $eq: [{ $dayOfMonth: '$occurredAt' }, parsedDateSearch.day]
+        }
+      })
+    }
+
+    filter.$or = orConditions
   }
 
   const total = await transactions.countDocuments(filter)
