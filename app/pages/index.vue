@@ -5,21 +5,60 @@ import type { HomeApiResponse, Period, Range } from "~/types";
 import HomeBudgetLimit from "~/components/home/HomeBudgetLimit.vue";
 import { formatIDRCurrency } from "~/composables/useHomeFinance";
 
-const { isNotificationsSlideoverOpen, unreadNotificationsCount, pushNotification } =
-  useDashboard();
+const {
+  isNotificationsSlideoverOpen,
+  unreadNotificationsCount,
+  pushNotification,
+} = useDashboard();
 const toast = useToast();
-const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
+const userProfile = useUserProfile();
 
-function getDefaultRangeByJakartaNow() {
+const now = ref<Date | null>(null);
+let clockTimer: ReturnType<typeof setInterval> | null = null;
+
+const currentTimeLabel = computed(() => {
+  if (!now.value) return "--:--";
+  return now.value.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+});
+
+const greetingLabel = computed(() => {
+  if (!now.value) return "Halo";
+  const hour = now.value.getHours();
+  if (hour < 11) return "Good Morning";
+  if (hour < 15) return "Good Afternoon";
+  if (hour < 19) return "Good Evening";
+  return "Good Night";
+});
+
+const greetingText = computed(() => {
+  const name = userProfile.value.name?.trim() || "User";
+  return `${greetingLabel.value}, ${name}`;
+});
+
+onMounted(() => {
+  now.value = new Date();
+  clockTimer = setInterval(() => {
+    now.value = new Date();
+  }, 1000 * 30);
+});
+
+onBeforeUnmount(() => {
+  if (clockTimer) clearInterval(clockTimer);
+});
+
+function getDefaultRangeByLocalNow() {
   const now = new Date();
-  const jakartaNow = new Date(now.getTime() + JAKARTA_OFFSET_MS);
-  const year = jakartaNow.getUTCFullYear();
-  const month = jakartaNow.getUTCMonth();
-  const day = jakartaNow.getUTCDate();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
 
   return {
-    start: new Date(Date.UTC(year, month, 1, 0, 0, 0, 0) - JAKARTA_OFFSET_MS),
-    end: new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - JAKARTA_OFFSET_MS),
+    start: new Date(year, month, 1, 0, 0, 0, 0),
+    end: new Date(year, month, day, 23, 59, 59, 999),
   };
 }
 
@@ -35,7 +74,7 @@ const loadingBalance = ref(false);
 const loadingExpense = ref(false);
 const loadingLimit = ref(false);
 
-const range = shallowRef<Range>(getDefaultRangeByJakartaNow());
+const range = shallowRef<Range>(getDefaultRangeByLocalNow());
 const period = ref<Period>("daily");
 
 const query = computed(() => ({
@@ -140,7 +179,11 @@ const notifiedBudgetMilestones = useState<Record<string, number[]>>(
   "budget-milestone-notifications",
   () => ({}),
 );
-const currentMonthKey = computed(() => new Date().toISOString().slice(0, 7));
+const currentMonthKey = computed(() => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${now.getFullYear()}-${month}`;
+});
 const previousBudgetProgress = ref<number | null>(null);
 const budgetProgress = computed(() => homeData.value?.budget.progress ?? 0);
 
@@ -231,13 +274,16 @@ async function onSubmitAddBalance(event: FormSubmitEvent<BalanceSchema>) {
 async function onSubmitAddExpense(event: FormSubmitEvent<ExpenseSchema>) {
   loadingExpense.value = true;
   try {
-    const created = await $fetch<{ ok: boolean; id?: string }>("/api/home/expenses", {
-      method: "POST",
-      body: {
-        ...event.data,
-        occurredAt: new Date(event.data.occurredAt).toISOString(),
+    const created = await $fetch<{ ok: boolean; id?: string }>(
+      "/api/home/expenses",
+      {
+        method: "POST",
+        body: {
+          ...event.data,
+          occurredAt: new Date(event.data.occurredAt).toISOString(),
+        },
       },
-    });
+    );
     toast.add({
       title: "Expense saved",
       description: "Expense has been recorded.",
@@ -340,6 +386,24 @@ async function onSubmitEditLimit(event: FormSubmitEvent<LimitSchema>) {
     </template>
 
     <template #body>
+      <div
+        class="rounded-lg border border-default bg-elevated/40 px-4 py-3 flex items-center justify-between"
+      >
+        <div>
+          <p class="text-xs uppercase text-muted tracking-[0.12em]">Greeting</p>
+          <p class="text-base sm:text-lg font-semibold text-highlighted">
+            {{ greetingText }}
+          </p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs uppercase text-muted tracking-[0.12em]">
+            Local Time
+          </p>
+          <p class="text-2xl font-semibold tabular-nums text-highlighted">
+            {{ currentTimeLabel }}
+          </p>
+        </div>
+      </div>
       <HomeStats :stats="homeData?.stats || []" />
       <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <HomeChart
