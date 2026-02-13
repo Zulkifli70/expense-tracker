@@ -66,6 +66,12 @@ watch(
 
 const categoryOptions = computed(() => data.value?.categories || ["all"]);
 const tableRows = computed(() => data.value?.items || []);
+const visibleTotalAmount = computed(() =>
+  tableRows.value.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+);
+const visibleTotalLabel = computed(() =>
+  formatIDRCurrency(Math.abs(visibleTotalAmount.value)),
+);
 
 function openTransactionDetail(id: string) {
   navigateTo(`/transactions/${id}`);
@@ -123,13 +129,7 @@ const tableColumns: TableColumn<TransactionListItem>[] = [
           class: "w-full text-right font-semibold transition hover:text-primary",
           onClick: () => openTransactionDetail(row.original.id),
         },
-        [
-          h(
-            "span",
-            { class: amount >= 0 ? "text-success" : "text-error" },
-            `${amount >= 0 ? "+" : "-"}${formatted}`,
-          ),
-        ],
+        [h("span", { class: "text-highlighted" }, formatted)],
       );
     },
   },
@@ -435,6 +435,16 @@ async function onDeleteTransaction(row: TransactionListItem) {
             variant="ghost"
             @click="resetFilters"
           />
+        </div>
+      </div>
+
+      <div class="inline-flex items-start gap-3 rounded-lg border border-default bg-elevated/40 px-4 py-3">
+        <div>
+          <p class="text-[11px] uppercase tracking-[0.12em] text-muted">Visible Total</p>
+          <p class="text-xl font-semibold tabular-nums text-highlighted">
+            {{ visibleTotalLabel }}
+          </p>
+          <p class="text-xs text-muted">Based on current filters and current page.</p>
         </div>
       </div>
 
