@@ -12,7 +12,9 @@ const page = ref(1);
 const pageSize = ref(10);
 const search = ref("");
 const category = ref("all");
-const period = ref<"this_month" | "all_time">("this_month");
+const period = ref<
+  "today" | "yesterday" | "this_week" | "last_30_days" | "this_month" | "all_time"
+>("this_month");
 
 const openExpenseModal = ref(false);
 const openEditModal = ref(false);
@@ -414,6 +416,10 @@ async function onDeleteTransaction(row: TransactionListItem) {
           <USelect
             v-model="period"
             :items="[
+              { label: 'Today', value: 'today' },
+              { label: 'Yesterday', value: 'yesterday' },
+              { label: 'This Week', value: 'this_week' },
+              { label: 'Last 30 Days', value: 'last_30_days' },
               { label: 'This Month', value: 'this_month' },
               { label: 'All Time', value: 'all_time' },
             ]"

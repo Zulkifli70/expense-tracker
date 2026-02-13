@@ -33,7 +33,9 @@ const querySchema = z.object({
   pageSize: z.coerce.number().int().refine(value => [10, 20, 30].includes(value)).default(10),
   search: z.string().trim().optional(),
   category: z.string().trim().optional(),
-  period: z.enum(['all_time', 'this_month']).default('this_month')
+  period: z
+    .enum(['today', 'yesterday', 'this_week', 'last_30_days', 'this_month', 'all_time'])
+    .default('this_month')
 })
 
 const MONTH_ALIAS_MAP: Record<string, number> = {
@@ -176,6 +178,42 @@ function getJakartaMonthRange(baseDate: Date) {
   return { start, end }
 }
 
+function getJakartaDayRange(baseDate: Date, dayOffset = 0) {
+  const local = new Date(baseDate.getTime() + JAKARTA_OFFSET_MS)
+  local.setUTCDate(local.getUTCDate() + dayOffset)
+
+  const year = local.getUTCFullYear()
+  const month = local.getUTCMonth()
+  const day = local.getUTCDate()
+
+  const start = new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - JAKARTA_OFFSET_MS)
+  const end = new Date(Date.UTC(year, month, day + 1, 0, 0, 0, 0) - JAKARTA_OFFSET_MS - 1)
+
+  return { start, end }
+}
+
+function getJakartaThisWeekRange(baseDate: Date) {
+  const local = new Date(baseDate.getTime() + JAKARTA_OFFSET_MS)
+  const currentWeekDay = local.getUTCDay()
+  const mondayOffset = currentWeekDay === 0 ? -6 : 1 - currentWeekDay
+
+  local.setUTCDate(local.getUTCDate() + mondayOffset)
+  const startYear = local.getUTCFullYear()
+  const startMonth = local.getUTCMonth()
+  const startDay = local.getUTCDate()
+
+  const start = new Date(Date.UTC(startYear, startMonth, startDay, 0, 0, 0, 0) - JAKARTA_OFFSET_MS)
+  const end = new Date(Date.UTC(startYear, startMonth, startDay + 7, 0, 0, 0, 0) - JAKARTA_OFFSET_MS - 1)
+
+  return { start, end }
+}
+
+function getJakartaLastDaysRange(baseDate: Date, days: number) {
+  const { start } = getJakartaDayRange(baseDate, -(days - 1))
+  const { end } = getJakartaDayRange(baseDate, 0)
+  return { start, end }
+}
+
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
   const parsed = querySchema.safeParse(getQuery(event))
@@ -211,8 +249,16 @@ export default eventHandler(async (event) => {
 
   const filter: Record<string, any> = { userId }
 
-  if (period === 'this_month') {
-    const { start, end } = getJakartaMonthRange(new Date())
+  if (period !== 'all_time') {
+    const now = new Date()
+    const rangeByPeriod = {
+      today: getJakartaDayRange(now, 0),
+      yesterday: getJakartaDayRange(now, -1),
+      this_week: getJakartaThisWeekRange(now),
+      last_30_days: getJakartaLastDaysRange(now, 30),
+      this_month: getJakartaMonthRange(now)
+    }
+    const { start, end } = rangeByPeriod[period]
     filter.occurredAt = { $gte: start, $lte: end }
   }
 
