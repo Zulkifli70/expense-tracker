@@ -27,7 +27,7 @@ const currentTimeLabel = computed(() => {
 });
 
 const greetingLabel = computed(() => {
-  if (!now.value) return "Halo";
+  if (!now.value) return "Hi";
   const hour = now.value.getHours();
   if (hour < 11) return "Good Morning";
   if (hour < 15) return "Good Afternoon";

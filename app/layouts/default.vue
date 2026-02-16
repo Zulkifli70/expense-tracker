@@ -31,7 +31,7 @@ const links = [
     },
     {
       label: "Reports",
-      icon: "i-lucide-users",
+      icon: "i-lucide-file-chart-column-increasing",
       to: "/reports",
       onSelect: () => {
         open.value = false;
@@ -78,12 +78,14 @@ const groups = computed(() => [
     items: links.flat(),
   },
   ...(searchTerm.value.trim().length >= 2
-    ? [{
-        id: "transactions-search",
-        label: "Transactions",
-        ignoreFilter: true,
-        items: transactionSearchItems.value,
-      }]
+    ? [
+        {
+          id: "transactions-search",
+          label: "Transactions",
+          ignoreFilter: true,
+          items: transactionSearchItems.value,
+        },
+      ]
     : []),
 ]);
 
@@ -121,21 +123,27 @@ watch(searchTerm, (value) => {
     searchLoading.value = true;
 
     try {
-      const response = await $fetch<TransactionsApiResponse>("/api/transactions", {
-        query: {
-          page: 1,
-          pageSize: 10,
-          search: keyword,
-          category: "all",
-          period: "all_time",
+      const response = await $fetch<TransactionsApiResponse>(
+        "/api/transactions",
+        {
+          query: {
+            page: 1,
+            pageSize: 10,
+            search: keyword,
+            category: "all",
+            period: "all_time",
+          },
         },
-      });
+      );
 
       if (requestId !== searchRequestId) return;
 
       transactionSearchItems.value = response.items.slice(0, 8).map((item) => ({
         id: item.id,
-        label: item.description && item.description !== "-" ? item.description : item.category,
+        label:
+          item.description && item.description !== "-"
+            ? item.description
+            : item.category,
         description: item.category,
         suffix: `${item.amount >= 0 ? "+" : "-"}${formatAmountIDR(item.amount)} | ${formatTransactionDate(item.date)}`,
         icon: "i-lucide-receipt-text",
