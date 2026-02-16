@@ -45,7 +45,7 @@ export interface Sale {
 }
 
 export interface Notification {
-  id: number
+  id: string
   unread?: boolean
   sender: {
     name: string

@@ -7,9 +7,9 @@ const {
   markNotificationAsRead,
 } = useDashboard();
 
-function onNotificationClick(notification: { id: number; to?: string }) {
+function onNotificationClick(notification: { id: string; to?: string }) {
   if (!notification.to) return;
-  markNotificationAsRead(notification.id);
+  void markNotificationAsRead(notification.id);
   isNotificationsSlideoverOpen.value = false;
 }
 </script>

@@ -28,6 +28,7 @@ export default defineNuxtConfig({
     mongodbTransactionsCollection: import.meta.env.MONGODB_TRANSACTIONS_COLLECTION || 'transactions',
     mongodbBudgetsCollection: import.meta.env.MONGODB_BUDGETS_COLLECTION || 'budgets',
     mongodbBudgetUsagesCollection: import.meta.env.MONGODB_BUDGET_USAGES_COLLECTION || 'budget_usages',
+    mongodbNotificationsCollection: import.meta.env.MONGODB_NOTIFICATIONS_COLLECTION || 'notifications',
     mongodbDefaultUserId: import.meta.env.MONGODB_DEFAULT_USER_ID || 'demo-user',
     mongodbIpFamily: import.meta.env.MONGODB_IP_FAMILY || '',
     mongodbServerSelectionTimeoutMs: Number(import.meta.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 10000)
