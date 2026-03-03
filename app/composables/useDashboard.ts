@@ -14,6 +14,7 @@ const _useDashboard = () => {
     () => false,
   );
   const notificationsLoading = ref(false);
+  const notificationsMarkingAllAsRead = ref(false);
 
   const unreadNotificationsCount = computed(
     () => notifications.value.filter((item) => item.unread).length,
@@ -100,6 +101,23 @@ const _useDashboard = () => {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    if (notificationsMarkingAllAsRead.value) return;
+
+    const unreadIds = notifications.value
+      .filter((item) => item.unread)
+      .map((item) => item.id);
+
+    if (!unreadIds.length) return;
+
+    notificationsMarkingAllAsRead.value = true;
+    try {
+      await Promise.all(unreadIds.map((id) => markNotificationAsRead(id)));
+    } finally {
+      notificationsMarkingAllAsRead.value = false;
+    }
+  };
+
   defineShortcuts({
     "g-h": () => router.push("/"),
     "g-i": () => router.push("/inbox"),
@@ -117,6 +135,18 @@ const _useDashboard = () => {
     },
   );
 
+  watch(
+    () => isNotificationsSlideoverOpen.value,
+    (isOpen) => {
+      if (!isOpen) return;
+
+      void (async () => {
+        await fetchNotifications();
+        await markAllNotificationsAsRead();
+      })();
+    },
+  );
+
   if (import.meta.client) {
     onMounted(() => {
       void fetchNotifications();
@@ -130,6 +160,7 @@ const _useDashboard = () => {
     fetchNotifications,
     pushNotification,
     markNotificationAsRead,
+    markAllNotificationsAsRead,
   };
 };
 
