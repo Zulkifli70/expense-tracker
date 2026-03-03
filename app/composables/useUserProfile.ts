@@ -9,10 +9,10 @@ export interface UserProfile {
 export const useUserProfile = () =>
 {
   const state = useState<UserProfile>('user-profile', () => ({
-    name: 'Zulkifli Firdausi',
-    email: 'zulkifli@example.com',
-    username: 'zulkifli70',
-    avatar: 'https://github.com/zulkifli70.png',
+    name: '',
+    email: '',
+    username: '',
+    avatar: undefined,
     bio: undefined
   }))
 
@@ -21,13 +21,23 @@ export const useUserProfile = () =>
   watch(
     () => user.value,
     (sessionUser) => {
-      if (!sessionUser) return
+      if (!sessionUser) {
+        state.value = {
+          name: '',
+          email: '',
+          username: '',
+          avatar: undefined,
+          bio: undefined
+        }
+        return
+      }
 
       state.value = {
         ...state.value,
-        name: sessionUser.name || state.value.name,
-        email: sessionUser.email || state.value.email,
-        username: sessionUser.username || state.value.username
+        name: sessionUser.name || '',
+        email: sessionUser.email || '',
+        username: sessionUser.username || '',
+        avatar: undefined
       }
     },
     { immediate: true }

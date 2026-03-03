@@ -5,6 +5,7 @@ import type { TransactionsApiResponse } from "~/types";
 const toast = useToast();
 
 const open = ref(false);
+const searchOpen = ref(false);
 const searchTerm = ref("");
 const searchLoading = ref(false);
 const transactionSearchItems = ref<NavigationMenuItem[]>([]);
@@ -213,6 +214,7 @@ onMounted(async () => {
       <template #default="{ collapsed }">
         <UDashboardSearchButton
           :collapsed="collapsed"
+          :kbds="['ctrl', 'k']"
           class="bg-transparent ring-default"
         />
 
@@ -239,9 +241,11 @@ onMounted(async () => {
     </UDashboardSidebar>
 
     <UDashboardSearch
+      v-model:open="searchOpen"
       v-model:search-term="searchTerm"
       :loading="searchLoading"
       :groups="groups"
+      shortcut="ctrl_k"
     />
 
     <slot />
