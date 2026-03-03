@@ -4,9 +4,11 @@ import type { ObjectId } from 'mongodb'
 import * as z from 'zod'
 import type { User, UserStatus } from '~/types'
 import { getMongoDb } from '../utils/mongodb'
+import { requireAuthUserId } from '../utils/session'
 
 type CustomerDocument = {
   _id?: ObjectId
+  userId?: string
   id?: number
   name?: string
   email?: string
@@ -39,14 +41,14 @@ async function getCollection() {
   return db.collection<CustomerDocument>(config.mongodbCustomersCollection || 'UserData')
 }
 
-async function listCustomers() {
+async function listCustomers(userId: string) {
   const collection = await getCollection()
-  const docs = await collection.find().sort({ id: 1, _id: 1 }).toArray()
+  const docs = await collection.find({ userId }).sort({ id: 1, _id: 1 }).toArray()
 
   return docs.map((doc, index) => normalizeCustomer(doc, index + 1))
 }
 
-async function createCustomer(event: H3Event) {
+async function createCustomer(event: H3Event, userId: string) {
   const collection = await getCollection()
   const body = await readBody(event)
   const parsed = createCustomerSchema.safeParse(body)
@@ -61,6 +63,7 @@ async function createCustomer(event: H3Event) {
   const payload = parsed.data
   const email = payload.email.trim().toLowerCase()
   const existing = await collection.findOne({
+    userId,
     email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
   })
 
@@ -71,7 +74,7 @@ async function createCustomer(event: H3Event) {
     })
   }
 
-  const latestCustomer = await collection.find().sort({ id: -1, _id: -1 }).limit(1).next()
+  const latestCustomer = await collection.find({ userId }).sort({ id: -1, _id: -1 }).limit(1).next()
   const currentId = typeof latestCustomer?.id === 'number' ? latestCustomer.id : 0
   const nextId = currentId + 1
 
@@ -83,7 +86,10 @@ async function createCustomer(event: H3Event) {
     location: payload.location?.trim() || 'Unknown'
   }
 
-  await collection.insertOne(customer)
+  await collection.insertOne({
+    ...customer,
+    userId
+  })
   setResponseStatus(event, 201)
 
   return customer
@@ -91,13 +97,14 @@ async function createCustomer(event: H3Event) {
 
 export default eventHandler(async (event) => {
   const method = getMethod(event)
+  const userId = await requireAuthUserId(event)
 
   if (method === 'GET') {
-    return listCustomers()
+    return listCustomers(userId)
   }
 
   if (method === 'POST') {
-    return createCustomer(event)
+    return createCustomer(event, userId)
   }
 
   throw createError({

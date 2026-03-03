@@ -2,6 +2,7 @@ import type { Collection, ObjectId } from 'mongodb'
 import * as z from 'zod'
 import type { Period } from '~/types'
 import { getMongoDb } from '../utils/mongodb'
+import { requireAuthUserId } from '../utils/session'
 
 type AccountDocument = {
   _id?: ObjectId
@@ -125,6 +126,7 @@ async function sumTransactionsByRange(
 export default eventHandler(async (event) => {
   const query = getQuery(event)
   const config = useRuntimeConfig()
+  const userId = await requireAuthUserId(event)
 
   const endDefault = new Date()
   const startDefault = new Date(endDefault.getTime() - 14 * 24 * 60 * 60 * 1000)
@@ -140,10 +142,6 @@ export default eventHandler(async (event) => {
       statusMessage: 'Invalid date range'
     })
   }
-
-  const userId = typeof query.userId === 'string' && query.userId
-    ? query.userId
-    : config.mongodbDefaultUserId
 
   const db = await getMongoDb()
   const accounts = db.collection<AccountDocument>(config.mongodbAccountsCollection)

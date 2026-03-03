@@ -7,6 +7,7 @@ defineProps<{
 
 const colorMode = useColorMode();
 const appConfig = useAppConfig();
+const { user: sessionUser, loggedIn, clear } = useUserSession();
 
 const colors = [
   "red",
@@ -31,7 +32,9 @@ const neutrals = ["slate", "gray", "zinc", "neutral", "stone"];
 
 const userProfile = useUserProfile();
 
-const userName = computed(() => userProfile.value.name || "User");
+const userName = computed(
+  () => sessionUser.value?.name || userProfile.value.name || "User",
+);
 
 const user = computed(() => ({
   name: userName.value,
@@ -44,6 +47,11 @@ const user = computed(() => ({
         alt: userName.value,
       },
 }));
+
+async function onLogout() {
+  await clear();
+  await navigateTo("/login");
+}
 
 const items = computed<DropdownMenuItem[][]>(() => [
   [
@@ -149,6 +157,19 @@ const items = computed<DropdownMenuItem[][]>(() => [
       ],
     },
   ],
+  ...(loggedIn.value
+    ? [
+        [
+          {
+            label: "Logout",
+            icon: "i-lucide-log-out",
+            onSelect() {
+              void onLogout();
+            },
+          },
+        ],
+      ]
+    : []),
 ]);
 </script>
 

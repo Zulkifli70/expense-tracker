@@ -1,6 +1,7 @@
 import type { ObjectId } from 'mongodb'
 import * as z from 'zod'
 import { getMongoDb } from '../utils/mongodb'
+import { requireAuthUserId } from '../utils/session'
 
 type CategoryDocument = {
   _id?: ObjectId
@@ -112,7 +113,9 @@ function parseDateSearch(search: string): {
 
   const dayOnlyMatch = raw.match(/^(\d{1,2})$/)
   if (dayOnlyMatch) {
-    const day = Number(dayOnlyMatch[1])
+    const dayToken = dayOnlyMatch[1]
+    if (!dayToken) return null
+    const day = Number(dayToken)
     if (day >= 1 && day <= 31) {
       return { mode: 'day_only', day }
     }
@@ -149,8 +152,12 @@ function parseDateSearch(search: string): {
 
   const textMatch = raw.match(/^(\d{1,2})\s+([a-zA-Z.]+)(?:\s+(\d{4}))?$/)
   if (textMatch) {
-    const day = Number(textMatch[1])
-    const monthToken = textMatch[2].replace(/\./g, '')
+    const dayToken = textMatch[1]
+    const monthTokenRaw = textMatch[2]
+    if (!dayToken || !monthTokenRaw) return null
+
+    const day = Number(dayToken)
+    const monthToken = monthTokenRaw.replace(/\./g, '')
     const month = MONTH_ALIAS_MAP[monthToken]
     if (!month || day < 1 || day > 31) return null
 
@@ -216,6 +223,7 @@ function getJakartaLastDaysRange(baseDate: Date, days: number) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
+  const userId = await requireAuthUserId(event)
   const parsed = querySchema.safeParse(getQuery(event))
 
   if (!parsed.success) {
@@ -226,7 +234,6 @@ export default eventHandler(async (event) => {
   }
 
   const { page, pageSize, search, category, period } = parsed.data
-  const userId = config.mongodbDefaultUserId
   const db = await getMongoDb()
   const transactions = db.collection<TransactionDocument>(config.mongodbTransactionsCollection)
   const accounts = db.collection<AccountDocument>(config.mongodbAccountsCollection)

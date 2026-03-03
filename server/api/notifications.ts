@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import * as z from 'zod'
 import { getMongoDb } from '../utils/mongodb'
+import { requireAuthUserId } from '../utils/session'
 
 type NotificationDocument = {
   _id?: ObjectId
@@ -52,7 +53,7 @@ function toNotificationViewModel(row: NotificationDocument) {
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
   const db = await getMongoDb()
-  const userId = config.mongodbDefaultUserId
+  const userId = await requireAuthUserId(event)
   const notifications = db.collection<NotificationDocument>(config.mongodbNotificationsCollection)
   const method = getMethod(event)
 

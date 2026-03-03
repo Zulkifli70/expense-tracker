@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
 import * as z from 'zod'
 import { getMongoDb } from '../../utils/mongodb'
+import { requireAuthUserId } from '../../utils/session'
 
 type CategoryDocument = {
   _id?: ObjectId
@@ -53,7 +54,7 @@ function toMaybeObjectId(id: ObjectId | string | undefined) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const userId = config.mongodbDefaultUserId
+  const userId = await requireAuthUserId(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)

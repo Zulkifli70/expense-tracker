@@ -24,17 +24,36 @@ const profile = reactive<Partial<ProfileSchema>>({
 })
 const toast = useToast()
 async function onSubmit(event: FormSubmitEvent<ProfileSchema>) {
-  userProfile.value = {
-    ...userProfile.value,
-    ...event.data
-  }
+  try {
+    await $fetch('/api/auth/profile', {
+      method: 'PATCH',
+      body: {
+        name: event.data.name,
+        email: event.data.email,
+        username: event.data.username
+      }
+    })
 
-  toast.add({
-    title: 'Success',
-    description: 'Your settings have been updated.',
-    icon: 'i-lucide-check',
-    color: 'success'
-  })
+    userProfile.value = {
+      ...userProfile.value,
+      ...event.data
+    }
+
+    toast.add({
+      title: 'Success',
+      description: 'Your settings have been updated.',
+      icon: 'i-lucide-check',
+      color: 'success'
+    })
+  }
+  catch (error: any) {
+    toast.add({
+      title: 'Failed',
+      description: error?.data?.statusMessage || 'Failed to update profile',
+      icon: 'i-lucide-circle-alert',
+      color: 'error'
+    })
+  }
 }
 
 function onFileChange(e: Event) {

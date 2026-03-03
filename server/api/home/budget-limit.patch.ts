@@ -1,5 +1,6 @@
 import * as z from 'zod'
 import { getMongoDb } from '../../utils/mongodb'
+import { requireAuthUserId } from '../../utils/session'
 
 const payloadSchema = z.object({
   limitAmount: z.number().positive(),
@@ -17,6 +18,7 @@ function monthRange(baseDate: Date) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
+  const userId = await requireAuthUserId(event)
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
 
@@ -28,7 +30,6 @@ export default eventHandler(async (event) => {
   }
 
   const payload = parsed.data
-  const userId = config.mongodbDefaultUserId
   const db = await getMongoDb()
   const budgets = db.collection(config.mongodbBudgetsCollection)
   const now = new Date()

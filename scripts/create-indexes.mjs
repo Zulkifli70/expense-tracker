@@ -41,6 +41,7 @@ async function main() {
 
   const dbName = process.env.MONGODB_DB || 'ExpensesData'
   const names = {
+    customers: process.env.MONGODB_CUSTOMERS_COLLECTION || 'UserData',
     users: process.env.MONGODB_USERS_COLLECTION || 'users',
     accounts: process.env.MONGODB_ACCOUNTS_COLLECTION || 'accounts',
     categories: process.env.MONGODB_CATEGORIES_COLLECTION || 'categories',
@@ -58,6 +59,13 @@ async function main() {
     await Promise.all(Object.values(names).map(name => ensureCollection(db, name)))
 
     await db.collection(names.users).createIndex({ email: 1 }, { unique: true, name: 'uniq_email' })
+    await db.collection(names.users).createIndex({ emailLower: 1 }, { unique: true, name: 'uniq_email_lower' })
+    await db.collection(names.users).createIndex({ usernameLower: 1 }, { unique: true, name: 'uniq_username_lower' })
+    await db.collection(names.customers).createIndex({ userId: 1, id: 1 }, { unique: true, name: 'uniq_customer_user_id' })
+    await db.collection(names.customers).createIndex(
+      { userId: 1, email: 1 },
+      { unique: true, name: 'uniq_customer_user_email' }
+    )
     await db.collection(names.accounts).createIndex({ userId: 1, isArchived: 1 }, { name: 'user_archived' })
     await db.collection(names.categories).createIndex(
       { userId: 1, kind: 1, name: 1 },

@@ -1,5 +1,6 @@
 import * as z from 'zod'
 import { getMongoDb } from '../../utils/mongodb'
+import { requireAuthUserId } from '../../utils/session'
 
 const payloadSchema = z.object({
   accountName: z.string().min(2),
@@ -9,6 +10,7 @@ const payloadSchema = z.object({
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
+  const userId = await requireAuthUserId(event)
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
 
@@ -19,7 +21,6 @@ export default eventHandler(async (event) => {
     })
   }
 
-  const userId = config.mongodbDefaultUserId
   const payload = parsed.data
   const db = await getMongoDb()
   const accounts = db.collection(config.mongodbAccountsCollection)
