@@ -7,7 +7,6 @@ import { formatIDRCurrency } from "~/composables/useHomeFinance";
 const route = useRoute();
 const toast = useToast();
 const { pushNotification } = useDashboard();
-const { updateTransactionWithOfflineFallback, deleteTransactionWithOfflineFallback } = useOfflineExpenses();
 
 const openEditModal = ref(false);
 const loadingUpdate = ref(false);
@@ -73,39 +72,26 @@ const amountColorClass = computed(() =>
 async function onSubmitUpdate(event: FormSubmitEvent<UpdateSchema>) {
   loadingUpdate.value = true;
   try {
-    const payload = {
-      ...event.data,
-      occurredAt: new Date(event.data.occurredAt).toISOString(),
-    };
-    const result = await updateTransactionWithOfflineFallback(transactionId.value, payload);
-
-    if (result.queued) {
-      toast.add({
-        title: "Update queued offline",
-        description:
-          "No internet connection. Transaction update is queued and will sync automatically.",
-        color: "warning",
-      });
-      pushNotification({
-        body: `Transaction update queued: ${formatIDRCurrency(event.data.amount)} in ${event.data.categoryName}.`,
-        to: `/transactions/${transactionId.value}`,
-      });
-    } else {
-      toast.add({
-        title: "Transaction updated",
-        description: "Transaction details have been updated.",
-        color: "success",
-      });
-      pushNotification({
-        body: `Transaction updated: ${formatIDRCurrency(event.data.amount)} in ${event.data.categoryName}.`,
-        to: `/transactions/${transactionId.value}`,
-      });
-      await refresh();
-      await refreshNuxtData("transactions-data");
-      await refreshNuxtData("home-data");
-    }
-
+    await $fetch(`/api/transactions/${transactionId.value}`, {
+      method: "PATCH",
+      body: {
+        ...event.data,
+        occurredAt: new Date(event.data.occurredAt).toISOString(),
+      },
+    });
+    toast.add({
+      title: "Transaction updated",
+      description: "Transaction details have been updated.",
+      color: "success",
+    });
+    pushNotification({
+      body: `Transaction updated: ${formatIDRCurrency(event.data.amount)} in ${event.data.categoryName}.`,
+      to: `/transactions/${transactionId.value}`,
+    });
     openEditModal.value = false;
+    await refresh();
+    await refreshNuxtData("transactions-data");
+    await refreshNuxtData("home-data");
   } catch (err: any) {
     toast.add({
       title: "Failed",
@@ -121,33 +107,20 @@ async function onDelete() {
   if (!confirm("Delete this transaction?")) return;
   loadingDelete.value = true;
   try {
-    const result = await deleteTransactionWithOfflineFallback(transactionId.value);
-
-    if (result.queued) {
-      toast.add({
-        title: "Delete queued offline",
-        description:
-          "No internet connection. Delete action is queued and will sync automatically.",
-        color: "warning",
-      });
-      pushNotification({
-        body: "Delete queued from detail page.",
-        to: "/transactions",
-      });
-    } else {
-      toast.add({
-        title: "Transaction deleted",
-        description: "Transaction has been removed.",
-        color: "success",
-      });
-      pushNotification({
-        body: "Transaction deleted from detail page.",
-        to: "/transactions",
-      });
-      await refreshNuxtData("transactions-data");
-      await refreshNuxtData("home-data");
-    }
-
+    await $fetch(`/api/transactions/${transactionId.value}`, {
+      method: "DELETE",
+    });
+    toast.add({
+      title: "Transaction deleted",
+      description: "Transaction has been removed.",
+      color: "success",
+    });
+    pushNotification({
+      body: "Transaction deleted from detail page.",
+      to: "/transactions",
+    });
+    await refreshNuxtData("transactions-data");
+    await refreshNuxtData("home-data");
     await navigateTo("/transactions");
   } catch (err: any) {
     toast.add({

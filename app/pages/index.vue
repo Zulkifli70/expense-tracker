@@ -11,7 +11,6 @@ const {
   unreadNotificationsCount,
   pushNotification,
 } = useDashboard();
-const { addBalanceWithOfflineFallback, addExpenseWithOfflineFallback } = useOfflineExpenses();
 const toast = useToast();
 const userProfile = useUserProfile();
 
@@ -263,32 +262,21 @@ watch(
 async function onSubmitAddBalance(event: FormSubmitEvent<BalanceSchema>) {
   loadingBalance.value = true;
   try {
-    const result = await addBalanceWithOfflineFallback(event.data);
-
-    if (result.queued) {
-      toast.add({
-        title: "Saved offline",
-        description:
-          "No internet connection. Balance change is stored locally and will sync automatically when online.",
-        color: "warning",
-      });
-      pushNotification({
-        body: `Balance queued offline: ${formatIDRCurrency(event.data.amount)} to ${event.data.accountName}.`,
-      });
-    } else {
-      toast.add({
-        title: "Balance updated",
-        description: "Balance has been added successfully.",
-        color: "success",
-      });
-      pushNotification({
-        body: `Balance added: ${formatIDRCurrency(event.data.amount)} to ${event.data.accountName}.`,
-      });
-      await refresh();
-    }
-
+    await $fetch("/api/home/balance", {
+      method: "POST",
+      body: event.data,
+    });
+    toast.add({
+      title: "Balance updated",
+      description: "Balance has been added successfully.",
+      color: "success",
+    });
+    pushNotification({
+      body: `Balance added: ${formatIDRCurrency(event.data.amount)} to ${event.data.accountName}.`,
+    });
     openBalanceModal.value = false;
     balanceState.amount = undefined;
+    await refresh();
   } catch (error: any) {
     toast.add({
       title: "Failed",
@@ -303,40 +291,30 @@ async function onSubmitAddBalance(event: FormSubmitEvent<BalanceSchema>) {
 async function onSubmitAddExpense(event: FormSubmitEvent<ExpenseSchema>) {
   loadingExpense.value = true;
   try {
-    const payload = {
-      ...event.data,
-      occurredAt: new Date(event.data.occurredAt).toISOString(),
-    };
-    const created = await addExpenseWithOfflineFallback(payload);
-
-    if (created.queued) {
-      toast.add({
-        title: "Saved offline",
-        description:
-          "No internet connection. Expense is stored locally and will sync automatically when online.",
-        color: "warning",
-      });
-      pushNotification({
-        body: `Expense queued offline: ${formatIDRCurrency(event.data.amount)} for ${event.data.categoryName}.`,
-        to: "/transactions",
-      });
-    } else {
-      toast.add({
-        title: "Expense saved",
-        description: "Expense has been recorded.",
-        color: "success",
-      });
-      pushNotification({
-        body: `New expense: ${formatIDRCurrency(event.data.amount)} for ${event.data.categoryName}.`,
-        to: created.id ? `/transactions/${created.id}` : "/transactions",
-      });
-      await refresh();
-    }
-
+    const created = await $fetch<{ ok: boolean; id?: string }>(
+      "/api/home/expenses",
+      {
+        method: "POST",
+        body: {
+          ...event.data,
+          occurredAt: new Date(event.data.occurredAt).toISOString(),
+        },
+      },
+    );
+    toast.add({
+      title: "Expense saved",
+      description: "Expense has been recorded.",
+      color: "success",
+    });
+    pushNotification({
+      body: `New expense: ${formatIDRCurrency(event.data.amount)} for ${event.data.categoryName}.`,
+      to: created.id ? `/transactions/${created.id}` : "/transactions",
+    });
     openExpenseModal.value = false;
     expenseState.amount = undefined;
     expenseState.note = "";
     expenseState.occurredAt = toDateTimeLocalInput(new Date());
+    await refresh();
   } catch (error: any) {
     toast.add({
       title: "Failed",

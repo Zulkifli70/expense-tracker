@@ -4,8 +4,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@vueuse/nuxt',
-    'nuxt-auth-utils',
-    '@vite-pwa/nuxt'
+    'nuxt-auth-utils'
   ],
 
   devtools: {
@@ -17,69 +16,6 @@ export default defineNuxtConfig({
   routeRules: {
     '/api/**': {
       cors: true
-    }
-  },
-
-  pwa: {
-    registerType: 'autoUpdate',
-    manifest: {
-      name: 'Expense Tracker',
-      short_name: 'Expenses',
-      description: 'Track balances, expenses, and monthly budget usage.',
-      theme_color: '#111827',
-      background_color: '#ffffff',
-      display: 'standalone',
-      start_url: '/',
-      icons: [
-        {
-          src: '/icons/pwa-192x192.png',
-          sizes: '192x192',
-          type: 'image/png'
-        },
-        {
-          src: '/icons/pwa-512x512.png',
-          sizes: '512x512',
-          type: 'image/png'
-        },
-        {
-          src: '/icons/pwa-maskable-512x512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable'
-        }
-      ]
-    },
-    workbox: {
-      navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
-      runtimeCaching: [
-        {
-          urlPattern: '/api/home',
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'api-home',
-            expiration: {
-              maxEntries: 20,
-              maxAgeSeconds: 60 * 60
-            }
-          }
-        },
-        {
-          urlPattern: '/api/transactions',
-          handler: 'NetworkFirst',
-          options: {
-            cacheName: 'api-transactions',
-            expiration: {
-              maxEntries: 40,
-              maxAgeSeconds: 60 * 60
-            }
-          }
-        }
-      ]
-    },
-    devOptions: {
-      enabled: true,
-      suppressWarnings: true
     }
   },
 

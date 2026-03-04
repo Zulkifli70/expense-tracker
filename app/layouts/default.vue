@@ -3,11 +3,6 @@ import type { NavigationMenuItem } from "@nuxt/ui";
 import type { TransactionsApiResponse } from "~/types";
 
 const toast = useToast();
-const isOnline = useOnline();
-const { pendingCount, syncInProgress, flushQueuedExpenses } = useOfflineExpenses();
-const { canInstall, isInstalled, shouldShowInstallCta, installHelpText, installInProgress, promptInstall } = usePwaInstall();
-const showInstallBanner = ref(true);
-const showOfflineBanner = ref(true);
 
 const open = ref(false);
 const searchOpen = ref(false);
@@ -199,76 +194,7 @@ onMounted(async () => {
       },
     ],
   });
-
-  setTimeout(() => {
-    showInstallBanner.value = false;
-  }, 10000);
-
-  setTimeout(() => {
-    showOfflineBanner.value = false;
-  }, 10000);
 });
-
-const offlineNoticeTitle = computed(() =>
-  isOnline.value ? "Pending offline data" : "You're offline",
-);
-
-const offlineNoticeDescription = computed(() => {
-  if (!isOnline.value) {
-    return `Changes requiring internet will be saved locally. Pending queue: ${pendingCount.value}.`;
-  }
-  return `There are ${pendingCount.value} queued change(s) waiting to sync.`;
-});
-
-async function syncOfflineQueue() {
-  const result = await flushQueuedExpenses();
-
-  if (result.synced > 0) {
-    toast.add({
-      title: "Offline data synced",
-      description: `${result.synced} item(s) uploaded successfully.`,
-      color: "success",
-    });
-    await Promise.all([
-      refreshNuxtData("home-data"),
-      refreshNuxtData("transactions-data"),
-    ]);
-  }
-
-  if (result.discarded > 0) {
-    toast.add({
-      title: "Some queued changes were skipped",
-      description: `${result.discarded} item(s) were discarded due to server validation.`,
-      color: "warning",
-    });
-  } else if (!isOnline.value) {
-    toast.add({
-      title: "Still offline",
-      description: "Reconnect to internet to sync queued data.",
-      color: "warning",
-    });
-  }
-}
-
-async function installPwa() {
-  const result = await promptInstall();
-  if (result.installed) {
-    toast.add({
-      title: "App installed",
-      description: "Expense Tracker is now installed on your device.",
-      color: "success",
-    });
-    return;
-  }
-
-  if (!result.promptAvailable) {
-    toast.add({
-      title: "Install manually",
-      description: installHelpText.value,
-      color: "info",
-    });
-  }
-}
 </script>
 
 <template>
@@ -325,57 +251,5 @@ async function installPwa() {
     <slot />
 
     <NotificationsSlideover />
-
-    <div class="fixed bottom-4 right-4 z-50 w-[min(92vw,26rem)] space-y-2 md:hidden">
-      <UBanner
-        v-if="shouldShowInstallCta && showInstallBanner"
-        icon="i-lucide-smartphone"
-        color="primary"
-        :title="canInstall ? 'Install app for faster access.' : 'Install manually from browser menu.'"
-        :actions="[
-          {
-            label: 'Install app',
-            color: 'primary',
-            variant: 'outline',
-            onClick: installPwa
-          },
-          {
-            label: 'Hide',
-            color: 'neutral',
-            variant: 'ghost',
-            onClick: () => {
-              showInstallBanner = false;
-            }
-          }
-        ]"
-        class="rounded-md py-1.5 shadow-lg"
-      />
-
-      <UBanner
-        v-if="(!isOnline || pendingCount > 0) && showOfflineBanner"
-        icon="i-lucide-cloud-off"
-        color="warning"
-        :title="!isOnline ? `Offline mode active (${pendingCount} queued).` : `${pendingCount} queued change(s) pending sync.`"
-        :actions="[
-          {
-            label: 'Sync now',
-            color: 'warning',
-            variant: 'outline',
-            loading: syncInProgress,
-            disabled: !isOnline || pendingCount === 0,
-            onClick: syncOfflineQueue
-          },
-          {
-            label: 'Hide',
-            color: 'neutral',
-            variant: 'ghost',
-            onClick: () => {
-              showOfflineBanner = false;
-            }
-          }
-        ]"
-        class="rounded-md py-1.5 shadow-lg"
-      />
-    </div>
   </UDashboardGroup>
 </template>
