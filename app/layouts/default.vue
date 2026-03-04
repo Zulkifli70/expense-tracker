@@ -5,7 +5,7 @@ import type { TransactionsApiResponse } from "~/types";
 const toast = useToast();
 const isOnline = useOnline();
 const { pendingCount, syncInProgress, flushQueuedExpenses } = useOfflineExpenses();
-const { canInstall, isInstalled, installInProgress, promptInstall } = usePwaInstall();
+const { canInstall, isInstalled, shouldShowInstallCta, installHelpText, installInProgress, promptInstall } = usePwaInstall();
 
 const open = ref(false);
 const searchOpen = ref(false);
@@ -248,6 +248,15 @@ async function installPwa() {
       description: "Expense Tracker is now installed on your device.",
       color: "success",
     });
+    return;
+  }
+
+  if (!result.promptAvailable) {
+    toast.add({
+      title: "Install manually",
+      description: installHelpText.value,
+      color: "info",
+    });
   }
 }
 </script>
@@ -303,13 +312,13 @@ async function installPwa() {
       shortcut="ctrl_k"
     />
 
-    <div v-if="canInstall && !isInstalled" class="px-4 pt-3">
+    <div v-if="shouldShowInstallCta" class="px-4 pt-3">
       <UAlert
         color="primary"
         variant="soft"
         icon="i-lucide-smartphone"
         title="Install this app"
-        description="Add Expense Tracker to your home screen for faster access and app-like experience."
+        :description="canInstall ? 'Add Expense Tracker to your home screen for faster access and app-like experience.' : 'Native install prompt is not available yet on this browser session. You can still install manually from browser menu.'"
       >
         <template #actions>
           <UButton
