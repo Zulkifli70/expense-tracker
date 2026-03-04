@@ -6,6 +6,8 @@ const toast = useToast();
 const isOnline = useOnline();
 const { pendingCount, syncInProgress, flushQueuedExpenses } = useOfflineExpenses();
 const { canInstall, isInstalled, shouldShowInstallCta, installHelpText, installInProgress, promptInstall } = usePwaInstall();
+const showInstallBanner = ref(true);
+const showOfflineBanner = ref(true);
 
 const open = ref(false);
 const searchOpen = ref(false);
@@ -197,6 +199,14 @@ onMounted(async () => {
       },
     ],
   });
+
+  setTimeout(() => {
+    showInstallBanner.value = false;
+  }, 10000);
+
+  setTimeout(() => {
+    showOfflineBanner.value = false;
+  }, 10000);
 });
 
 const offlineNoticeTitle = computed(() =>
@@ -312,51 +322,60 @@ async function installPwa() {
       shortcut="ctrl_k"
     />
 
-    <div v-if="shouldShowInstallCta" class="px-4 pt-3">
-      <UAlert
-        color="primary"
-        variant="soft"
-        icon="i-lucide-smartphone"
-        title="Install this app"
-        :description="canInstall ? 'Add Expense Tracker to your home screen for faster access and app-like experience.' : 'Native install prompt is not available yet on this browser session. You can still install manually from browser menu.'"
-      >
-        <template #actions>
-          <UButton
-            label="Install app"
-            color="primary"
-            variant="outline"
-            size="sm"
-            :loading="installInProgress"
-            @click="installPwa"
-          />
-        </template>
-      </UAlert>
-    </div>
-
-    <div v-if="!isOnline || pendingCount > 0" class="px-4 pt-3">
-      <UAlert
-        color="warning"
-        variant="soft"
-        icon="i-lucide-cloud-off"
-        :title="offlineNoticeTitle"
-        :description="offlineNoticeDescription"
-      >
-        <template #actions>
-          <UButton
-            label="Sync now"
-            color="warning"
-            variant="outline"
-            size="sm"
-            :disabled="!isOnline || pendingCount === 0"
-            :loading="syncInProgress"
-            @click="syncOfflineQueue"
-          />
-        </template>
-      </UAlert>
-    </div>
-
     <slot />
 
     <NotificationsSlideover />
+
+    <div class="fixed bottom-4 right-4 z-50 w-[min(92vw,26rem)] space-y-2 md:hidden">
+      <UBanner
+        v-if="shouldShowInstallCta && showInstallBanner"
+        icon="i-lucide-smartphone"
+        color="primary"
+        :title="canInstall ? 'Install app for faster access.' : 'Install manually from browser menu.'"
+        :actions="[
+          {
+            label: 'Install app',
+            color: 'primary',
+            variant: 'outline',
+            onClick: installPwa
+          },
+          {
+            label: 'Hide',
+            color: 'neutral',
+            variant: 'ghost',
+            onClick: () => {
+              showInstallBanner = false;
+            }
+          }
+        ]"
+        class="rounded-md py-1.5 shadow-lg"
+      />
+
+      <UBanner
+        v-if="(!isOnline || pendingCount > 0) && showOfflineBanner"
+        icon="i-lucide-cloud-off"
+        color="warning"
+        :title="!isOnline ? `Offline mode active (${pendingCount} queued).` : `${pendingCount} queued change(s) pending sync.`"
+        :actions="[
+          {
+            label: 'Sync now',
+            color: 'warning',
+            variant: 'outline',
+            loading: syncInProgress,
+            disabled: !isOnline || pendingCount === 0,
+            onClick: syncOfflineQueue
+          },
+          {
+            label: 'Hide',
+            color: 'neutral',
+            variant: 'ghost',
+            onClick: () => {
+              showOfflineBanner = false;
+            }
+          }
+        ]"
+        class="rounded-md py-1.5 shadow-lg"
+      />
+    </div>
   </UDashboardGroup>
 </template>
