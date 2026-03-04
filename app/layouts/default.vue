@@ -3,6 +3,9 @@ import type { NavigationMenuItem } from "@nuxt/ui";
 import type { TransactionsApiResponse } from "~/types";
 
 const toast = useToast();
+const isOnline = useOnline();
+const { pendingCount, syncInProgress, flushQueuedExpenses } = useOfflineExpenses();
+const { canInstall, isInstalled, installInProgress, promptInstall } = usePwaInstall();
 
 const open = ref(false);
 const searchOpen = ref(false);
@@ -195,6 +198,58 @@ onMounted(async () => {
     ],
   });
 });
+
+const offlineNoticeTitle = computed(() =>
+  isOnline.value ? "Pending offline data" : "You're offline",
+);
+
+const offlineNoticeDescription = computed(() => {
+  if (!isOnline.value) {
+    return `Changes requiring internet will be saved locally. Pending queue: ${pendingCount.value}.`;
+  }
+  return `There are ${pendingCount.value} queued change(s) waiting to sync.`;
+});
+
+async function syncOfflineQueue() {
+  const result = await flushQueuedExpenses();
+
+  if (result.synced > 0) {
+    toast.add({
+      title: "Offline data synced",
+      description: `${result.synced} item(s) uploaded successfully.`,
+      color: "success",
+    });
+    await Promise.all([
+      refreshNuxtData("home-data"),
+      refreshNuxtData("transactions-data"),
+    ]);
+  }
+
+  if (result.discarded > 0) {
+    toast.add({
+      title: "Some queued changes were skipped",
+      description: `${result.discarded} item(s) were discarded due to server validation.`,
+      color: "warning",
+    });
+  } else if (!isOnline.value) {
+    toast.add({
+      title: "Still offline",
+      description: "Reconnect to internet to sync queued data.",
+      color: "warning",
+    });
+  }
+}
+
+async function installPwa() {
+  const result = await promptInstall();
+  if (result.installed) {
+    toast.add({
+      title: "App installed",
+      description: "Expense Tracker is now installed on your device.",
+      color: "success",
+    });
+  }
+}
 </script>
 
 <template>
@@ -247,6 +302,49 @@ onMounted(async () => {
       :groups="groups"
       shortcut="ctrl_k"
     />
+
+    <div v-if="canInstall && !isInstalled" class="px-4 pt-3">
+      <UAlert
+        color="primary"
+        variant="soft"
+        icon="i-lucide-smartphone"
+        title="Install this app"
+        description="Add Expense Tracker to your home screen for faster access and app-like experience."
+      >
+        <template #actions>
+          <UButton
+            label="Install app"
+            color="primary"
+            variant="outline"
+            size="sm"
+            :loading="installInProgress"
+            @click="installPwa"
+          />
+        </template>
+      </UAlert>
+    </div>
+
+    <div v-if="!isOnline || pendingCount > 0" class="px-4 pt-3">
+      <UAlert
+        color="warning"
+        variant="soft"
+        icon="i-lucide-cloud-off"
+        :title="offlineNoticeTitle"
+        :description="offlineNoticeDescription"
+      >
+        <template #actions>
+          <UButton
+            label="Sync now"
+            color="warning"
+            variant="outline"
+            size="sm"
+            :disabled="!isOnline || pendingCount === 0"
+            :loading="syncInProgress"
+            @click="syncOfflineQueue"
+          />
+        </template>
+      </UAlert>
+    </div>
 
     <slot />
 

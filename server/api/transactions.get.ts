@@ -2,6 +2,7 @@ import type { ObjectId } from 'mongodb'
 import * as z from 'zod'
 import { getMongoDb } from '../utils/mongodb'
 import { requireAuthUserId } from '../utils/session'
+import { mergeExpenseCategories } from '~~/shared/constants/expense-categories'
 
 type CategoryDocument = {
   _id?: ObjectId
@@ -270,8 +271,9 @@ export default eventHandler(async (event) => {
   }
 
   if (category && category !== 'all') {
+    const selectedCategory = category.toLowerCase()
     const matchedCategoryIds = categoryRows
-      .filter(row => row.name === category)
+      .filter(row => row.name.toLowerCase() === selectedCategory)
       .map(row => row._id)
 
     filter.categoryId = {
@@ -349,7 +351,7 @@ export default eventHandler(async (event) => {
     pageSize,
     total,
     totalPages,
-    categories: ['all', ...categoryRows.map(row => row.name)],
+    categories: ['all', ...mergeExpenseCategories(categoryRows.map(row => row.name))],
     items: rows.map((item, index) => ({
       id: toObjectIdString(item._id) || `txn-${index + 1}`,
       date: item.occurredAt.toISOString(),

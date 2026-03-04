@@ -1,96 +1,94 @@
 <script setup lang="ts">
-import * as z from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
+import * as z from "zod";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
 definePageMeta({
-  layout: false
-})
+  layout: false,
+});
 
-const route = useRoute()
-const toast = useToast()
+const route = useRoute();
+const toast = useToast();
 
-const mode = ref<'login' | 'register'>('login')
-const submitting = ref(false)
+const mode = ref<"login" | "register">("login");
+const submitting = ref(false);
 
 const loginSchema = z.object({
-  identifier: z.string().trim().min(1, 'Email or username is required'),
-  password: z.string().min(1, 'Password is required')
-})
+  identifier: z.string().trim().min(1, "Email or username is required"),
+  password: z.string().min(1, "Password is required"),
+});
 
 const registerSchema = z.object({
-  name: z.string().trim().min(2, 'Name is too short'),
-  email: z.string().trim().email('Email is invalid'),
-  username: z.string().trim().min(3, 'Username is too short'),
-  password: z.string().min(8, 'Password must be at least 8 characters')
-})
+  name: z.string().trim().min(2, "Name is too short"),
+  email: z.string().trim().email("Email is invalid"),
+  username: z.string().trim().min(3, "Username is too short"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
 
-type LoginSchema = z.output<typeof loginSchema>
-type RegisterSchema = z.output<typeof registerSchema>
+type LoginSchema = z.output<typeof loginSchema>;
+type RegisterSchema = z.output<typeof registerSchema>;
 
 const loginState = reactive<Partial<LoginSchema>>({
-  identifier: '',
-  password: ''
-})
+  identifier: "",
+  password: "",
+});
 
 const registerState = reactive<Partial<RegisterSchema>>({
-  name: '',
-  email: '',
-  username: '',
-  password: ''
-})
+  name: "",
+  email: "",
+  username: "",
+  password: "",
+});
 
 const redirectPath = computed(() => {
-  const value = route.query.redirect
-  return typeof value === 'string' && value.startsWith('/') ? value : '/'
-})
+  const value = route.query.redirect;
+  return typeof value === "string" && value.startsWith("/") ? value : "/";
+});
 
 async function onSubmitLogin(event: FormSubmitEvent<LoginSchema>) {
-  submitting.value = true
+  submitting.value = true;
   try {
-    await $fetch('/api/auth/login', {
-      method: 'POST',
-      body: event.data
-    })
+    await $fetch("/api/auth/login", {
+      method: "POST",
+      body: event.data,
+    });
 
-    await navigateTo(redirectPath.value)
-  }
-  catch (error: any) {
+    await navigateTo(redirectPath.value);
+  } catch (error: any) {
     toast.add({
-      title: 'Login failed',
-      description: error?.data?.statusMessage || 'Invalid credentials',
-      color: 'error'
-    })
-  }
-  finally {
-    submitting.value = false
+      title: "Login failed",
+      description: error?.data?.statusMessage || "Invalid credentials",
+      color: "error",
+    });
+  } finally {
+    submitting.value = false;
   }
 }
 
 async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
-  submitting.value = true
+  submitting.value = true;
   try {
-    await $fetch('/api/auth/register', {
-      method: 'POST',
-      body: event.data
-    })
+    await $fetch("/api/auth/register", {
+      method: "POST",
+      body: event.data,
+    });
 
-    await navigateTo(redirectPath.value)
-  }
-  catch (error: any) {
+    await navigateTo(redirectPath.value);
+  } catch (error: any) {
     toast.add({
-      title: 'Registration failed',
-      description: error?.data?.statusMessage || 'Please check your input',
-      color: 'error'
-    })
-  }
-  finally {
-    submitting.value = false
+      title: "Registration failed",
+      description: error?.data?.statusMessage || "Please check your input",
+      color: "error",
+    });
+  } finally {
+    submitting.value = false;
   }
 }
 </script>
 
 <template>
-  <main class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
+  <main
+    class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6"
+  >
     <UCard class="w-full max-w-md">
       <template #header>
         <div class="space-y-2">
@@ -110,6 +108,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
             :variant="mode === 'login' ? 'solid' : 'outline'"
             color="neutral"
             @click="mode = 'login'"
+            class="mb-2"
           >
             Login
           </UButton>
@@ -127,7 +126,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
           v-if="mode === 'login'"
           :schema="loginSchema"
           :state="loginState"
-          class="space-y-4"
+          class="space-y-4 mt-4"
           @submit="onSubmitLogin"
         >
           <UFormField label="Email or Username" name="identifier">
@@ -147,9 +146,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
             />
           </UFormField>
 
-          <UButton type="submit" block :loading="submitting">
-            Sign in
-          </UButton>
+          <UButton type="submit" block :loading="submitting"> Sign in </UButton>
         </UForm>
 
         <UForm
