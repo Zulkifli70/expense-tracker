@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  addDays,
   endOfMonth,
   startOfMonth,
   startOfYear,
@@ -63,6 +64,26 @@ const { data: homeData } = await useFetch<HomeApiResponse>("/api/home", {
   key: "reports-data",
 });
 
+const now = new Date();
+const previousMonthStart = startOfMonth(subMonths(now, 1));
+const previousMonthComparableEnd = new Date(
+  Math.min(
+    addDays(previousMonthStart, now.getDate() - 1).getTime(),
+    endOfMonth(previousMonthStart).getTime(),
+  ),
+);
+
+const previousMonthQuery = computed(() => ({
+  period: "daily" as const,
+  start: previousMonthStart.toISOString(),
+  end: previousMonthComparableEnd.toISOString(),
+}));
+
+const { data: previousMonthData } = await useFetch<HomeApiResponse>("/api/home", {
+  query: previousMonthQuery,
+  key: "reports-last-month-data",
+});
+
 const summary = computed(() => ({
   totalBalance: homeData.value?.summary.totalBalance || 0,
   currentSpending: homeData.value?.summary.currentSpending || 0,
@@ -102,6 +123,19 @@ const projectedGap = computed(
   () => budget.value.limit - projectedMonthEndSpend.value,
 );
 
+const lastMonthSpending = computed(
+  () => previousMonthData.value?.summary.currentSpending || 0,
+);
+
+const vsLastMonthDifference = computed(
+  () => summary.value.currentSpending - lastMonthSpending.value,
+);
+
+const vsLastMonthPercent = computed(() => {
+  if (!lastMonthSpending.value) return summary.value.currentSpending ? 100 : 0;
+  return Math.round((vsLastMonthDifference.value / lastMonthSpending.value) * 100);
+});
+
 const topCategoryShare = computed(() => {
   if (!topCategory.value || !summary.value.currentSpending) return 0;
   return Math.round(
@@ -109,69 +143,130 @@ const topCategoryShare = computed(() => {
   );
 });
 
-const estimatedRunwayDays = computed(() => {
-  if (!averageDailySpend.value) return 0;
-  return Math.max(Math.floor(budget.value.remaining / averageDailySpend.value), 0);
+const overBudgetRisk = computed(() => {
+  if (!budget.value.limit) {
+    return {
+      level: "No budget set",
+      icon: "i-lucide-circle-help",
+      iconClass: "text-muted",
+      description: "Set a monthly budget to calculate risk.",
+      dailyCap: 0,
+      color: "neutral",
+    };
+  }
+
+  const ratio = projectedMonthEndSpend.value / budget.value.limit;
+  const remainingDays = Math.max(
+    endOfMonth(new Date()).getDate() - new Date().getDate(),
+    0,
+  );
+  const dailyCap = remainingDays
+    ? Math.max(Math.floor(budget.value.remaining / remainingDays), 0)
+    : 0;
+
+  if (ratio >= 1.1) {
+    return {
+      level: "High Risk",
+      icon: "i-lucide-alert-triangle",
+      iconClass: "text-error",
+      description: `Projected over by ${formatIDRCurrency(Math.abs(projectedGap.value))}.`,
+      dailyCap,
+      color: "error",
+    };
+  }
+
+  if (ratio >= 1) {
+    return {
+      level: "Medium Risk",
+      icon: "i-lucide-alert-circle",
+      iconClass: "text-warning",
+      description: "Very close to budget limit this month.",
+      dailyCap,
+      color: "warning",
+    };
+  }
+
+  return {
+    level: "Low Risk",
+    icon: "i-lucide-shield-check",
+    iconClass: "text-success",
+    description: "Current pace is still within budget.",
+    dailyCap,
+    color: "success",
+  };
+});
+
+const categoryEfficiency = computed(() => {
+  if (!topCategory.value || !summary.value.currentSpending) {
+    return {
+      label: "No category data",
+      icon: "i-lucide-layers-3",
+      iconClass: "text-muted",
+      description: "Add more expense records to analyze category efficiency.",
+      reallocation: 0,
+    };
+  }
+
+  const targetShare = 35;
+  const excessShare = Math.max(topCategoryShare.value - targetShare, 0);
+  const reallocation = Math.round(
+    (summary.value.currentSpending * excessShare) / 100,
+  );
+
+  if (topCategoryShare.value > 50) {
+    return {
+      label: "Needs Rebalance",
+      icon: "i-lucide-scale",
+      iconClass: "text-error",
+      description: `${topCategory.value.label} takes ${topCategoryShare.value}% of spending.`,
+      reallocation,
+    };
+  }
+
+  if (topCategoryShare.value > 35) {
+    return {
+      label: "Watch Category Mix",
+      icon: "i-lucide-scale",
+      iconClass: "text-warning",
+      description: `${topCategory.value.label} is slightly dominant at ${topCategoryShare.value}%.`,
+      reallocation,
+    };
+  }
+
+  return {
+    label: "Efficient Mix",
+    icon: "i-lucide-scale",
+    iconClass: "text-success",
+    description: "Category distribution is still balanced.",
+    reallocation: 0,
+  };
 });
 
 const insights = computed(() => {
-  const notes = [];
-
-  if (budget.value.status === "critical") {
-      notes.push({
-        color: "error" as const,
-        iconClass: "text-error",
-        icon: "i-lucide-alert-triangle",
-        title: "Budget is in the critical zone",
-        description: "Limit non-essential spending to avoid going over budget.",
-      });
-  } else if (budget.value.status === "warning") {
-      notes.push({
-        color: "warning" as const,
-        iconClass: "text-warning",
-        icon: "i-lucide-alert-circle",
-        title: "Spending is approaching the warning threshold",
-        description: "Reserve remaining budget for essential needs through month-end.",
-      });
-  } else {
-      notes.push({
-        color: "success" as const,
-        iconClass: "text-success",
-        icon: "i-lucide-badge-check",
-        title: "Budget remains healthy",
-        description: "Current spending pace is still within a safe range.",
-      });
-  }
-
-  if (topCategory.value && topCategoryShare.value >= 35) {
-    notes.push({
-      color: "warning" as const,
-      iconClass: "text-warning",
-      icon: "i-lucide-pie-chart",
-      title: `${topCategory.value.label} is dominant (${topCategoryShare.value}%)`,
-      description: "Consider setting a weekly cap for this category.",
-    });
-  }
-
-  if (projectedGap.value < 0) {
-    notes.push({
-      color: "error" as const,
-      iconClass: "text-error",
-      icon: "i-lucide-trending-up",
-      title: "Month-end projection exceeds budget limit",
-      description: `Potential overspend of ${formatIDRCurrency(Math.abs(projectedGap.value))}.`,
-    });
-  } else {
-    notes.push({
-      color: "success" as const,
-      iconClass: "text-success",
-      icon: "i-lucide-shield-check",
-      title: "Projection is still within budget",
-      description: `Remaining buffer: ${formatIDRCurrency(projectedGap.value)}.`,
-    });
-  }
-
-  return notes.slice(0, 3);
+  return [
+    {
+      icon: "i-lucide-calendar-days",
+      iconClass: "text-primary",
+      title: "Average Daily Spending",
+      description: `${formatIDRCurrency(averageDailySpend.value)}/day in selected period.`,
+    },
+    {
+      icon: overBudgetRisk.value.icon,
+      iconClass: overBudgetRisk.value.iconClass,
+      title: `Over-Budget Risk: ${overBudgetRisk.value.level}`,
+      description: overBudgetRisk.value.dailyCap
+        ? `${overBudgetRisk.value.description} Daily cap: ${formatIDRCurrency(overBudgetRisk.value.dailyCap)}.`
+        : overBudgetRisk.value.description,
+    },
+    {
+      icon: categoryEfficiency.value.icon,
+      iconClass: categoryEfficiency.value.iconClass,
+      title: `Category Efficiency: ${categoryEfficiency.value.label}`,
+      description: categoryEfficiency.value.reallocation
+        ? `${categoryEfficiency.value.description} Reallocate around ${formatIDRCurrency(categoryEfficiency.value.reallocation)}.`
+        : categoryEfficiency.value.description,
+    },
+  ];
 });
 
 const stats = computed(() => [
@@ -194,10 +289,10 @@ const stats = computed(() => [
     icon: "i-lucide-layers-3",
   },
   {
-    title: "Forecast Gap",
-    value: `${projectedGap.value >= 0 ? "+" : "-"}${formatIDRCurrency(Math.abs(projectedGap.value))}`,
-    note: "Projection gap vs this month's budget",
-    icon: "i-lucide-radar",
+    title: "VS Last Month",
+    value: `${vsLastMonthDifference.value >= 0 ? "+" : "-"}${formatIDRCurrency(Math.abs(vsLastMonthDifference.value))}`,
+    note: `${vsLastMonthPercent.value >= 0 ? "+" : ""}${vsLastMonthPercent.value}% vs previous month`,
+    icon: "i-lucide-arrow-left-right",
   },
 ]);
 </script>
@@ -329,23 +424,13 @@ const stats = computed(() => [
             <template #header>
               <div>
                 <p class="text-xs text-muted uppercase tracking-[0.12em]">
-                  Runway Insight
+                  Insights
                 </p>
                 <p class="mt-1 text-sm text-muted">
-                  Estimated budget runway based on the current spending pace
+                  Key spending signals for this period
                 </p>
               </div>
             </template>
-
-            <div>
-              <p class="text-4xl font-semibold text-highlighted">
-                {{ estimatedRunwayDays }}
-                <span class="text-xl text-muted font-medium">days</span>
-              </p>
-              <p class="mt-1 text-sm text-muted">
-                Remaining budget {{ formatIDRCurrency(budget.remaining) }}
-              </p>
-            </div>
 
             <div class="space-y-3">
               <div
