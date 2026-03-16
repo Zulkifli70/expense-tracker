@@ -114,7 +114,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
           </p>
 
           <div class="mt-8 space-y-4">
-            <UButtonGroup class="w-full">
+            <UButtonGroup class="w-full mb-2">
               <UButton
                 block
                 :variant="mode === 'login' ? 'solid' : 'outline'"
