@@ -130,7 +130,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
                 color="neutral"
                 @click="mode = 'register'"
               >
-                Register
+                Daftar
               </UButton>
             </UButtonGroup>
 
@@ -182,6 +182,10 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
               class="space-y-4"
               @submit="onSubmitRegister"
             >
+              <p class="text-sm text-muted leading-relaxed">
+                Buat akun baru untuk mulai mencatat pengeluaran dan target
+                tabunganmu.
+              </p>
               <UFormField label="Nama Lengkap" name="name">
                 <UInput
                   v-model="registerState.name"
@@ -221,7 +225,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
               </UFormField>
 
               <UButton type="submit" block :loading="submitting">
-                Create account
+                Buat akun
               </UButton>
             </UForm>
           </div>
