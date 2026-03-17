@@ -146,7 +146,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
                   v-model="loginState.identifier"
                   class="w-full"
                   autocomplete="username"
-                  placeholder="nama@contoh.com"
+                  placeholder="email@contoh.com"
                 />
               </UFormField>
 
