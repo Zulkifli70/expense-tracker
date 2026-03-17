@@ -141,7 +141,7 @@ async function onSubmitRegister(event: FormSubmitEvent<RegisterSchema>) {
               class="space-y-4 mt-4"
               @submit="onSubmitLogin"
             >
-              <UFormField label="Email atau Username" name="identifier">
+              <UFormField label="Email or Username" name="identifier">
                 <UInput
                   v-model="loginState.identifier"
                   class="w-full"
