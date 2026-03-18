@@ -3,12 +3,13 @@ import type { NavigationMenuItem } from "@nuxt/ui";
 import type { TransactionsApiResponse } from "~/types";
 
 const toast = useToast();
+const { loggedIn } = useUserSession();
 
 const open = ref(false);
 const searchOpen = ref(false);
 const searchTerm = ref("");
 const searchLoading = ref(false);
-const transactionSearchItems = ref<NavigationMenuItem[]>([]);
+const transactionSearchItems = ref<any[]>([]);
 let searchRequestId = 0;
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -72,23 +73,26 @@ const links = [
   ],
 ] satisfies NavigationMenuItem[][];
 
-const groups = computed(() => [
-  {
-    id: "links",
-    label: "Go to",
-    items: links.flat(),
-  },
-  ...(searchTerm.value.trim().length >= 2
-    ? [
-        {
-          id: "transactions-search",
-          label: "Transactions",
-          ignoreFilter: true,
-          items: transactionSearchItems.value,
-        },
-      ]
-    : []),
-]);
+const groups = computed(() => {
+  const baseGroups: any[] = [
+    {
+      id: "links",
+      label: "Go to",
+      items: links.flat(),
+    },
+  ];
+
+  if (searchTerm.value.trim().length >= 2) {
+    baseGroups.push({
+      id: "transactions-search",
+      label: "Transactions",
+      ignoreFilter: true,
+      items: transactionSearchItems.value,
+    });
+  }
+
+  return baseGroups;
+});
 
 function formatAmountIDR(amount: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -198,58 +202,62 @@ onMounted(async () => {
 </script>
 
 <template>
-  <UDashboardGroup unit="rem">
-    <UDashboardSidebar
-      id="default"
-      v-model:open="open"
-      collapsible
-      resizable
-      class="bg-elevated/25"
-      :ui="{ footer: 'lg:border-t lg:border-default' }"
-    >
-      <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
-      </template>
+  <div class="contents">
+    <slot v-if="!loggedIn" />
 
-      <template #default="{ collapsed }">
-        <UDashboardSearchButton
-          :collapsed="collapsed"
-          :kbds="['ctrl', 'k']"
-          class="bg-transparent ring-default"
-        />
+    <UDashboardGroup v-else unit="rem">
+      <UDashboardSidebar
+        id="default"
+        v-model:open="open"
+        collapsible
+        resizable
+        class="bg-elevated/25"
+        :ui="{ footer: 'lg:border-t lg:border-default' }"
+      >
+        <template #header="{ collapsed }">
+          <TeamsMenu :collapsed="collapsed" />
+        </template>
 
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[0]"
-          orientation="vertical"
-          tooltip
-          popover
-        />
+        <template #default="{ collapsed }">
+          <UDashboardSearchButton
+            :collapsed="collapsed"
+            :kbds="['ctrl', 'k']"
+            class="bg-transparent ring-default"
+          />
 
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[1]"
-          orientation="vertical"
-          tooltip
-          class="mt-auto"
-        />
-      </template>
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="links[0]"
+            orientation="vertical"
+            tooltip
+            popover
+          />
 
-      <template #footer="{ collapsed }">
-        <UserMenu :collapsed="collapsed" />
-      </template>
-    </UDashboardSidebar>
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="links[1]"
+            orientation="vertical"
+            tooltip
+            class="mt-auto"
+          />
+        </template>
 
-    <UDashboardSearch
-      v-model:open="searchOpen"
-      v-model:search-term="searchTerm"
-      :loading="searchLoading"
-      :groups="groups"
-      shortcut="ctrl_k"
-    />
+        <template #footer="{ collapsed }">
+          <UserMenu :collapsed="collapsed" />
+        </template>
+      </UDashboardSidebar>
 
-    <slot />
+      <UDashboardSearch
+        v-model:open="searchOpen"
+        v-model:search-term="searchTerm"
+        :loading="searchLoading"
+        :groups="groups"
+        shortcut="ctrl_k"
+      />
 
-    <NotificationsSlideover />
-  </UDashboardGroup>
+      <slot />
+
+      <NotificationsSlideover />
+    </UDashboardGroup>
+  </div>
 </template>

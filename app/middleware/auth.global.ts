@@ -1,5 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to) => {
   const { loggedIn, fetch } = useUserSession()
+  const publicPaths = new Set(['/', '/login'])
 
   if (!loggedIn.value) {
     await fetch()
@@ -9,6 +10,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (loggedIn.value) {
       return navigateTo('/')
     }
+    return
+  }
+
+  if (publicPaths.has(to.path)) {
     return
   }
 
