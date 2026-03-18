@@ -112,7 +112,7 @@ function openRegister() {
 
 <template>
   <main
-    class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#e2fbe8_100%)] px-4 py-6 sm:px-6"
+    class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#e2fbe8_100%)] px-4 py-6 transition-colors dark:bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.14),_transparent_30%),linear-gradient(180deg,_#07110d_0%,_#0f1f18_100%)] sm:px-6"
   >
     <section class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
       <header class="flex items-center justify-between py-2">
@@ -123,10 +123,14 @@ function openRegister() {
             <UIcon name="i-lucide-wallet-2" class="size-5" />
           </div>
           <div>
-            <p class="text-sm font-medium tracking-[0.22em] text-emerald-700">
+            <p
+              class="text-sm font-medium tracking-[0.22em] text-emerald-700 dark:text-emerald-300"
+            >
               EXPENSE TRACKER
             </p>
-            <p class="text-sm text-slate-500">Personal finance, simplified.</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Personal finance, simplified.
+            </p>
           </div>
         </NuxtLink>
 
@@ -134,10 +138,10 @@ function openRegister() {
       </header>
 
       <div
-        class="mt-6 grid flex-1 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-2xl shadow-emerald-950/10 backdrop-blur lg:grid-cols-[minmax(0,1fr)_440px]"
+        class="mt-6 grid flex-1 overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-2xl shadow-emerald-950/10 backdrop-blur transition-colors dark:border-white/10 dark:bg-slate-950/80 dark:shadow-black/30 lg:grid-cols-[minmax(0,1fr)_440px]"
       >
         <div
-          class="relative hidden overflow-hidden bg-slate-950 px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between"
+          class="relative hidden overflow-hidden bg-slate-950 px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between dark:bg-[#020817]"
         >
           <div
             class="absolute -left-12 top-10 h-48 w-48 rounded-full bg-emerald-400/20 blur-3xl"
@@ -188,21 +192,23 @@ function openRegister() {
           </div>
         </div>
 
-        <div class="flex items-center px-6 py-8 sm:px-10 lg:px-12">
+        <div
+          class="flex items-center bg-white/90 px-6 py-8 transition-colors dark:bg-slate-900/70 sm:px-10 lg:px-12"
+        >
           <div class="w-full">
             <p
-              class="text-sm font-medium uppercase tracking-[0.22em] text-emerald-700"
+              class="text-sm font-medium uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-300"
             >
               {{ mode === "login" ? "Welcome back" : "Create your account" }}
             </p>
-            <h2 class="mt-3 text-3xl font-semibold text-slate-950">
+            <h2 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">
               {{
                 mode === "login"
                   ? "Log in to your dashboard"
                   : "Start tracking your finances"
               }}
             </h2>
-            <p class="mt-3 text-sm leading-6 text-slate-500">
+            <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
               {{
                 mode === "login"
                   ? "Use your registered account to continue where you left off."
@@ -210,25 +216,36 @@ function openRegister() {
               }}
             </p>
 
-            <UButtonGroup class="mt-8 flex w-full">
+            <div
+              class="mt-8 grid w-full grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-100 p-1 dark:border-white/10 dark:bg-slate-800/70"
+            >
               <UButton
                 block
-                :variant="mode === 'login' ? 'solid' : 'outline'"
                 color="neutral"
-                class="mb-2"
+                variant="ghost"
+                :class="
+                  mode === 'login'
+                    ? 'bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100'
+                    : 'bg-transparent text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-700/70'
+                "
                 @click="openLogin"
               >
                 Log in
               </UButton>
               <UButton
                 block
-                :variant="mode === 'register' ? 'solid' : 'outline'"
                 color="neutral"
+                variant="ghost"
+                :class="
+                  mode === 'register'
+                    ? 'bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100'
+                    : 'bg-transparent text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-700/70'
+                "
                 @click="openRegister"
               >
                 Register
               </UButton>
-            </UButtonGroup>
+            </div>
 
             <UForm
               v-if="mode === 'login'"
@@ -257,12 +274,12 @@ function openRegister() {
               </UFormField>
 
               <div
-                class="flex items-center justify-between text-xs text-slate-500"
+                class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400"
               >
                 <span>Use the credentials linked to your account.</span>
                 <button
                   type="button"
-                  class="font-medium text-emerald-700 transition hover:text-emerald-800"
+                  class="font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
                 >
                   Forgot password?
                 </button>
