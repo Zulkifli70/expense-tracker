@@ -1,11 +1,16 @@
 // @ts-check
-import withNuxt from './.nuxt/eslint.config.mjs'
+import withNuxt from "./.nuxt/eslint.config.mjs";
 
 export default withNuxt({
   rules: {
-    'vue/no-multiple-template-root': 'off',
-    'vue/max-attributes-per-line': ['error', { singleline: 3 }]
-    'quotes': 'off', // matikan aturan quote
-  'semi': 'off' // matikan aturan semicolon
-  }
-})
+    "vue/no-multiple-template-root": "off",
+    "vue/max-attributes-per-line": ["error", { singleline: 3 }],
+    quotes: "off",
+    semi: "off",
+    "@stylistic/quotes": "off",
+    "@stylistic/semi": "off",
+    "@stylistic/comma-dangle": "off",
+    "vue/singleline-html-element-content-newline": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+  },
+});
