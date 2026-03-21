@@ -1,4 +1,6 @@
-export async function requireAuthUserId(event: Parameters<typeof requireUserSession>[0]) {
+import { getDemoSessionId, isDemoUser } from './demo'
+
+export async function requireAuthContext(event: Parameters<typeof requireUserSession>[0]) {
   const session = await requireUserSession(event)
   const userId = session.user?.id
 
@@ -9,5 +11,15 @@ export async function requireAuthUserId(event: Parameters<typeof requireUserSess
     })
   }
 
-  return userId
+  return {
+    session,
+    userId,
+    isDemo: isDemoUser(session.user),
+    demoSessionId: getDemoSessionId(session.user)
+  }
+}
+
+export async function requireAuthUserId(event: Parameters<typeof requireUserSession>[0]) {
+  const context = await requireAuthContext(event)
+  return context.userId
 }

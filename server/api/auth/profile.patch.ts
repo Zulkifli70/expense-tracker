@@ -1,6 +1,7 @@
 import * as z from 'zod'
 import { getUsersCollection, normalizeEmail, normalizeUsername, toAuthUser, type UserDocument } from '../../utils/auth'
-import { requireAuthUserId } from '../../utils/session'
+import { getDemoStateForUser, updateDemoProfile } from '../../utils/demo'
+import { requireAuthContext } from '../../utils/session'
 
 const payloadSchema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -9,7 +10,7 @@ const payloadSchema = z.object({
 })
 
 export default eventHandler(async (event) => {
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
 
@@ -18,6 +19,24 @@ export default eventHandler(async (event) => {
       statusCode: 400,
       statusMessage: parsed.error.issues[0]?.message || 'Invalid payload'
     })
+  }
+
+  if (isDemo) {
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    const result = updateDemoProfile(state, parsed.data)
+    await setUserSession(event, {
+      user: result.user,
+      loggedInAt: session.loggedInAt
+    })
+
+    return result
   }
 
   const users = await getUsersCollection()

@@ -1,7 +1,8 @@
 import { ObjectId } from 'mongodb'
 import * as z from 'zod'
+import { addDemoExpense, getDemoStateForUser } from '../../utils/demo'
 import { getMongoDb } from '../../utils/mongodb'
-import { requireAuthUserId } from '../../utils/session'
+import { requireAuthContext } from '../../utils/session'
 
 const payloadSchema = z.object({
   accountName: z.string().min(2),
@@ -13,7 +14,7 @@ const payloadSchema = z.object({
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
 
@@ -22,6 +23,19 @@ export default eventHandler(async (event) => {
       statusCode: 400,
       statusMessage: parsed.error.issues[0]?.message || 'Invalid payload'
     })
+  }
+
+  if (isDemo) {
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    setResponseStatus(event, 201)
+    return addDemoExpense(state, userId, parsed.data)
   }
 
   const payload = parsed.data

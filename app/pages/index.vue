@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const { loggedIn } = useUserSession();
+const toast = useToast();
+const { loggedIn, fetch } = useUserSession();
+const demoSubmitting = ref(false);
 
 const featureItems = [
   {
@@ -36,6 +38,25 @@ useSeoMeta({
     ? "Monitor your balance, expenses, and monthly budget from a single dashboard."
     : "Track expenses, monitor monthly budgets, and review your cash flow with a focused personal finance dashboard.",
 });
+
+async function startDemo() {
+  demoSubmitting.value = true;
+  try {
+    await $fetch("/api/auth/demo", {
+      method: "POST",
+    });
+    await fetch();
+    await navigateTo("/");
+  } catch (error: any) {
+    toast.add({
+      title: "Demo unavailable",
+      description: error?.data?.statusMessage || "Failed to start demo session",
+      color: "error",
+    });
+  } finally {
+    demoSubmitting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -66,6 +87,15 @@ useSeoMeta({
         </NuxtLink>
 
         <div class="flex items-center gap-3">
+          <UButton
+            color="neutral"
+            variant="soft"
+            class="hidden rounded-full px-5 sm:inline-flex"
+            :loading="demoSubmitting"
+            @click="startDemo"
+          >
+            Try Demo
+          </UButton>
           <UButton
             to="/login"
             color="neutral"
@@ -113,6 +143,16 @@ useSeoMeta({
               class="rounded-full px-7"
             >
               Create account
+            </UButton>
+            <UButton
+              size="xl"
+              color="neutral"
+              variant="soft"
+              class="rounded-full px-7"
+              :loading="demoSubmitting"
+              @click="startDemo"
+            >
+              Try Demo
             </UButton>
             <UButton
               to="/login"

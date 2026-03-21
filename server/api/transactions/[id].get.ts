@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb'
+import { buildDemoTransactionDetail, getDemoStateForUser } from '../../utils/demo'
 import { getMongoDb } from '../../utils/mongodb'
-import { requireAuthUserId } from '../../utils/session'
+import { requireAuthContext } from '../../utils/session'
 
 type CategoryDocument = {
   _id?: ObjectId
@@ -39,8 +40,27 @@ function toMaybeObjectId(id: ObjectId | string | undefined) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
   const id = getRouterParam(event, 'id')
+
+  if (isDemo) {
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid transaction id'
+      })
+    }
+
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    return buildDemoTransactionDetail(state, id)
+  }
 
   if (!id || !ObjectId.isValid(id)) {
     throw createError({

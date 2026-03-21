@@ -1,7 +1,8 @@
 import type { ObjectId } from 'mongodb'
 import * as z from 'zod'
+import { buildDemoTransactionsResponse, getDemoStateForUser } from '../utils/demo'
 import { getMongoDb } from '../utils/mongodb'
-import { requireAuthUserId } from '../utils/session'
+import { requireAuthContext } from '../utils/session'
 import { mergeExpenseCategories } from '~~/shared/constants/expense-categories'
 
 type CategoryDocument = {
@@ -224,7 +225,7 @@ function getJakartaLastDaysRange(baseDate: Date, days: number) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
   const parsed = querySchema.safeParse(getQuery(event))
 
   if (!parsed.success) {
@@ -232,6 +233,21 @@ export default eventHandler(async (event) => {
       statusCode: 400,
       statusMessage: 'Invalid query'
     })
+  }
+
+  if (isDemo) {
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    const demoCategories = mergeExpenseCategories(
+      state.categories.filter(item => item.kind === 'expense').map(item => item.name)
+    )
+    return buildDemoTransactionsResponse(state, parsed.data, demoCategories)
   }
 
   const { page, pageSize, search, category, period } = parsed.data

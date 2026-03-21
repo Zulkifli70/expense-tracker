@@ -1,7 +1,8 @@
 import { ObjectId } from 'mongodb'
 import * as z from 'zod'
+import { getDemoStateForUser, updateDemoTransaction } from '../../utils/demo'
 import { getMongoDb } from '../../utils/mongodb'
-import { requireAuthUserId } from '../../utils/session'
+import { requireAuthContext } from '../../utils/session'
 
 type CategoryDocument = {
   _id?: ObjectId
@@ -54,10 +55,36 @@ function toMaybeObjectId(id: ObjectId | string | undefined) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
+
+  if (isDemo) {
+    if (!id) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid transaction id'
+      })
+    }
+
+    if (!parsed.success) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: parsed.error.issues[0]?.message || 'Invalid payload'
+      })
+    }
+
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    return updateDemoTransaction(state, id, parsed.data)
+  }
 
   if (!id || !ObjectId.isValid(id)) {
     throw createError({

@@ -8,9 +8,11 @@ definePageMeta({
 
 const route = useRoute();
 const toast = useToast();
+const { fetch } = useUserSession();
 
 const mode = ref<"login" | "register">("login");
 const submitting = ref(false);
+const demoSubmitting = ref(false);
 
 const loginSchema = z.object({
   identifier: z.string().trim().min(1, "Email or username is required"),
@@ -107,6 +109,25 @@ function openRegister() {
       mode: "register",
     },
   });
+}
+
+async function onTryDemo() {
+  demoSubmitting.value = true;
+  try {
+    await $fetch("/api/auth/demo", {
+      method: "POST",
+    });
+    await fetch();
+    await navigateTo(redirectPath.value);
+  } catch (error: any) {
+    toast.add({
+      title: "Demo unavailable",
+      description: error?.data?.statusMessage || "Failed to start demo session",
+      color: "error",
+    });
+  } finally {
+    demoSubmitting.value = false;
+  }
 }
 </script>
 
@@ -339,6 +360,28 @@ function openRegister() {
                 Create account
               </UButton>
             </UForm>
+
+            <div
+              class="mt-6 rounded-2xl border border-emerald-200/70 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10"
+            >
+              <p class="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+                Try the product with sample data
+              </p>
+              <p class="mt-1 text-sm leading-6 text-emerald-800/80 dark:text-emerald-100/75">
+                Demo data is temporary, never saved to the database, and resets
+                when you close the browser.
+              </p>
+              <UButton
+                class="mt-4"
+                color="primary"
+                variant="soft"
+                block
+                :loading="demoSubmitting"
+                @click="onTryDemo"
+              >
+                Try Demo
+              </UButton>
+            </div>
           </div>
         </div>
       </div>

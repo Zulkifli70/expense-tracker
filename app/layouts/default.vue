@@ -2,8 +2,8 @@
 import type { NavigationMenuItem } from "@nuxt/ui";
 import type { TransactionsApiResponse } from "~/types";
 
-const toast = useToast();
-const { loggedIn } = useUserSession();
+const { loggedIn, user } = useUserSession();
+const isDemo = computed(() => !!user.value?.isDemo);
 
 const open = ref(false);
 const searchOpen = ref(false);
@@ -170,7 +170,6 @@ onBeforeUnmount(() => {
     clearTimeout(searchDebounceTimer);
   }
 });
-
 </script>
 
 <template>
@@ -226,6 +225,15 @@ onBeforeUnmount(() => {
         :groups="groups"
         shortcut="ctrl_k"
       />
+
+      <div v-if="isDemo" class="px-4 pt-4 lg:px-6">
+        <UAlert
+          color="warning"
+          variant="soft"
+          title="Demo mode is active"
+          description="Changes stay in this temporary session only and reset after the browser is closed."
+        />
+      </div>
 
       <slot />
 

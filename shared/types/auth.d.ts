@@ -4,6 +4,7 @@ declare module '#auth-utils' {
     email: string
     username: string
     name: string
+    isDemo?: boolean
   }
 
   interface UserSession {

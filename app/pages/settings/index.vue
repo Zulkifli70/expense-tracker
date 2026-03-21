@@ -4,6 +4,8 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 
 const fileRef = ref<HTMLInputElement>()
 const userProfile = useUserProfile()
+const { user: sessionUser } = useUserSession()
+const isDemo = computed(() => !!sessionUser.value?.isDemo)
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Too short'),
@@ -72,111 +74,121 @@ function onFileClick() {
 </script>
 
 <template>
-  <UForm
-    id="settings"
-    :schema="profileSchema"
-    :state="profile"
-    @submit="onSubmit"
-  >
-    <UPageCard
-      title="Profile"
-      description="These informations will be displayed publicly."
-      variant="naked"
-      orientation="horizontal"
-      class="mb-4"
-    >
-      <UButton
-        form="settings"
-        label="Save changes"
-        color="neutral"
-        type="submit"
-        class="w-fit lg:ms-auto"
-      />
-    </UPageCard>
+  <div class="space-y-4">
+    <UAlert
+      v-if="isDemo"
+      color="warning"
+      variant="soft"
+      title="Demo profile"
+      description="You can edit this profile to explore the flow, but the changes reset with the demo session."
+    />
 
-    <UPageCard variant="subtle">
-      <UFormField
-        name="name"
-        label="Name"
-        description="Will appear on receipts, invoices, and other communication."
-        required
-        class="flex max-sm:flex-col justify-between items-start gap-4"
+    <UForm
+      id="settings"
+      :schema="profileSchema"
+      :state="profile"
+      @submit="onSubmit"
+    >
+      <UPageCard
+        title="Profile"
+        description="These informations will be displayed publicly."
+        variant="naked"
+        orientation="horizontal"
+        class="mb-4"
       >
-        <UInput
-          v-model="profile.name"
-          autocomplete="off"
+        <UButton
+          form="settings"
+          label="Save changes"
+          color="neutral"
+          type="submit"
+          class="w-fit lg:ms-auto"
         />
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="email"
-        label="Email"
-        description="Used to sign in, for email receipts and product updates."
-        required
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-      >
-        <UInput
-          v-model="profile.email"
-          type="email"
-          autocomplete="off"
-        />
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="username"
-        label="Username"
-        description="Your unique username for logging in and your profile URL."
-        required
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-      >
-        <UInput
-          v-model="profile.username"
-          type="username"
-          autocomplete="off"
-        />
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="avatar"
-        label="Avatar"
-        description="JPG, GIF or PNG. 1MB Max."
-        class="flex max-sm:flex-col justify-between sm:items-center gap-4"
-      >
-        <div class="flex flex-wrap items-center gap-3">
-          <UAvatar
-            :src="profile.avatar"
-            :alt="profile.name"
-            size="lg"
+      </UPageCard>
+
+      <UPageCard variant="subtle">
+        <UFormField
+          name="name"
+          label="Name"
+          description="Will appear on receipts, invoices, and other communication."
+          required
+          class="flex max-sm:flex-col justify-between items-start gap-4"
+        >
+          <UInput
+            v-model="profile.name"
+            autocomplete="off"
           />
-          <UButton
-            label="Choose"
-            color="neutral"
-            @click="onFileClick"
+        </UFormField>
+        <USeparator />
+        <UFormField
+          name="email"
+          label="Email"
+          description="Used to sign in, for email receipts and product updates."
+          required
+          class="flex max-sm:flex-col justify-between items-start gap-4"
+        >
+          <UInput
+            v-model="profile.email"
+            type="email"
+            autocomplete="off"
           />
-          <input
-            ref="fileRef"
-            type="file"
-            class="hidden"
-            accept=".jpg, .jpeg, .png, .gif"
-            @change="onFileChange"
-          >
-        </div>
-      </UFormField>
-      <USeparator />
-      <UFormField
-        name="bio"
-        label="Bio"
-        description="Brief description for your profile. URLs are hyperlinked."
-        class="flex max-sm:flex-col justify-between items-start gap-4"
-        :ui="{ container: 'w-full' }"
-      >
-        <UTextarea
-          v-model="profile.bio"
-          :rows="5"
-          autoresize
-          class="w-full"
-        />
-      </UFormField>
-    </UPageCard>
-  </UForm>
+        </UFormField>
+        <USeparator />
+        <UFormField
+          name="username"
+          label="Username"
+          description="Your unique username for logging in and your profile URL."
+          required
+          class="flex max-sm:flex-col justify-between items-start gap-4"
+        >
+          <UInput
+            v-model="profile.username"
+            type="username"
+            autocomplete="off"
+          />
+        </UFormField>
+        <USeparator />
+        <UFormField
+          name="avatar"
+          label="Avatar"
+          description="JPG, GIF or PNG. 1MB Max."
+          class="flex max-sm:flex-col justify-between sm:items-center gap-4"
+        >
+          <div class="flex flex-wrap items-center gap-3">
+            <UAvatar
+              :src="profile.avatar"
+              :alt="profile.name"
+              size="lg"
+            />
+            <UButton
+              label="Choose"
+              color="neutral"
+              @click="onFileClick"
+            />
+            <input
+              ref="fileRef"
+              type="file"
+              class="hidden"
+              accept=".jpg, .jpeg, .png, .gif"
+              @change="onFileChange"
+            >
+          </div>
+        </UFormField>
+        <USeparator />
+        <UFormField
+          name="bio"
+          label="Bio"
+          description="Brief description for your profile. URLs are hyperlinked."
+          class="flex max-sm:flex-col justify-between items-start gap-4"
+          :ui="{ container: 'w-full' }"
+        >
+          <UTextarea
+            v-model="profile.bio"
+            :rows="5"
+            autoresize
+            class="w-full"
+          />
+        </UFormField>
+      </UPageCard>
+    </UForm>
+  </div>
 </template>

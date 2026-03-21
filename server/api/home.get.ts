@@ -1,8 +1,9 @@
 import type { Collection, ObjectId } from 'mongodb'
 import * as z from 'zod'
 import type { Period } from '~/types'
+import { buildDemoHomeResponse, getDemoStateForUser } from '../utils/demo'
 import { getMongoDb } from '../utils/mongodb'
-import { requireAuthUserId } from '../utils/session'
+import { requireAuthContext } from '../utils/session'
 
 type AccountDocument = {
   _id?: ObjectId
@@ -126,7 +127,19 @@ async function sumTransactionsByRange(
 export default eventHandler(async (event) => {
   const query = getQuery(event)
   const config = useRuntimeConfig()
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
+
+  if (isDemo) {
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    return buildDemoHomeResponse(state, query, userId)
+  }
 
   const endDefault = new Date()
   const startDefault = new Date(endDefault.getTime() - 14 * 24 * 60 * 60 * 1000)

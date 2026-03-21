@@ -1,6 +1,7 @@
 import * as z from 'zod'
+import { getDemoStateForUser, updateDemoBudgetLimit } from '../../utils/demo'
 import { getMongoDb } from '../../utils/mongodb'
-import { requireAuthUserId } from '../../utils/session'
+import { requireAuthContext } from '../../utils/session'
 
 const payloadSchema = z.object({
   limitAmount: z.number().positive(),
@@ -18,7 +19,7 @@ function monthRange(baseDate: Date) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const userId = await requireAuthUserId(event)
+  const { userId, session, isDemo } = await requireAuthContext(event)
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
 
@@ -27,6 +28,18 @@ export default eventHandler(async (event) => {
       statusCode: 400,
       statusMessage: parsed.error.issues[0]?.message || 'Invalid payload'
     })
+  }
+
+  if (isDemo) {
+    const state = getDemoStateForUser(session.user)
+    if (!state) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    return updateDemoBudgetLimit(state, parsed.data)
   }
 
   const payload = parsed.data

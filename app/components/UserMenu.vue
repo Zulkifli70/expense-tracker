@@ -8,6 +8,7 @@ defineProps<{
 const colorMode = useColorMode();
 const appConfig = useAppConfig();
 const { user: sessionUser, loggedIn, clear } = useUserSession();
+const isDemo = computed(() => !!sessionUser.value?.isDemo);
 
 const colors = [
   "red",
@@ -63,7 +64,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
   ],
   [
     {
-      label: "Profile",
+      label: isDemo.value ? "Demo Profile" : "Profile",
       icon: "i-lucide-user",
       to: "/settings",
     },
@@ -161,7 +162,7 @@ const items = computed<DropdownMenuItem[][]>(() => [
     ? [
         [
           {
-            label: "Logout",
+            label: isDemo.value ? "Exit Demo" : "Logout",
             icon: "i-lucide-log-out",
             onSelect() {
               void onLogout();
