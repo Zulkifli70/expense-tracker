@@ -83,6 +83,7 @@ type DemoDateSearch = {
 
 const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000
 const FALLBACK_COLORS = ['#0EA5E9', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6']
+const DEMO_STORAGE_NAMESPACE = 'demo-sessions'
 
 const MONTH_ALIAS_MAP: Record<string, number> = {
   jan: 1,
@@ -125,20 +126,78 @@ const MONTH_ALIAS_MAP: Record<string, number> = {
   december: 12
 }
 
-function createDemoStore() {
-  return new Map<string, DemoState>()
+type StoredDemoState = Omit<DemoState, 'createdAt' | 'updatedAt' | 'transactions' | 'budget'> & {
+  createdAt: string
+  updatedAt: string
+  transactions: Array<Omit<DemoTransaction, 'occurredAt' | 'createdAt' | 'updatedAt'> & {
+    occurredAt: string
+    createdAt: string
+    updatedAt: string
+  }>
+  budget: Omit<DemoBudget, 'startDate' | 'endDate' | 'createdAt' | 'updatedAt'> & {
+    startDate: string
+    endDate: string
+    createdAt: string
+    updatedAt: string
+  }
 }
 
-function getDemoStore() {
-  const globalState = globalThis as typeof globalThis & {
-    __expenseTrackerDemoStore?: Map<string, DemoState>
+function getDemoStorage() {
+  return useStorage(DEMO_STORAGE_NAMESPACE)
+}
+
+function demoStorageKey(sessionId: string) {
+  return `session:${sessionId}`
+}
+
+function serializeDemoState(state: DemoState): StoredDemoState {
+  return {
+    ...state,
+    createdAt: state.createdAt.toISOString(),
+    updatedAt: state.updatedAt.toISOString(),
+    transactions: state.transactions.map(item => ({
+      ...item,
+      occurredAt: item.occurredAt.toISOString(),
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString()
+    })),
+    budget: {
+      ...state.budget,
+      startDate: state.budget.startDate.toISOString(),
+      endDate: state.budget.endDate.toISOString(),
+      createdAt: state.budget.createdAt.toISOString(),
+      updatedAt: state.budget.updatedAt.toISOString()
+    }
+  }
+}
+
+function deserializeDemoState(input: StoredDemoState | DemoState) {
+  if (input.createdAt instanceof Date) {
+    return input as DemoState
   }
 
-  if (!globalState.__expenseTrackerDemoStore) {
-    globalState.__expenseTrackerDemoStore = createDemoStore()
-  }
+  return {
+    ...input,
+    createdAt: new Date(input.createdAt),
+    updatedAt: new Date(input.updatedAt),
+    transactions: input.transactions.map(item => ({
+      ...item,
+      occurredAt: new Date(item.occurredAt),
+      createdAt: new Date(item.createdAt),
+      updatedAt: new Date(item.updatedAt)
+    })),
+    budget: {
+      ...input.budget,
+      startDate: new Date(input.budget.startDate),
+      endDate: new Date(input.budget.endDate),
+      createdAt: new Date(input.budget.createdAt),
+      updatedAt: new Date(input.budget.updatedAt)
+    }
+  } satisfies DemoState
+}
 
-  return globalState.__expenseTrackerDemoStore
+async function persistDemoState(sessionId: string, state: DemoState) {
+  await getDemoStorage().setItem(demoStorageKey(sessionId), serializeDemoState(state))
 }
 
 function generateId() {
@@ -587,19 +646,19 @@ function touchState(state: DemoState) {
   state.updatedAt = new Date()
 }
 
-export function createDemoSession() {
+export async function createDemoSession() {
   const sessionId = generateId()
   const state = createDemoSeed(sessionId)
-  getDemoStore().set(sessionId, state)
+  await persistDemoState(sessionId, state)
   return {
     sessionId,
     user: state.user
   }
 }
 
-export function clearDemoSession(sessionId?: string) {
+export async function clearDemoSession(sessionId?: string) {
   if (!sessionId) return
-  getDemoStore().delete(sessionId)
+  await getDemoStorage().removeItem(demoStorageKey(sessionId))
 }
 
 export function isDemoUser(user: DemoAuthLikeUser | null | undefined) {
@@ -611,20 +670,21 @@ export function getDemoSessionId(user: DemoAuthLikeUser | null | undefined) {
   return user.id.slice('demo-session:'.length)
 }
 
-export function getDemoStateBySessionId(sessionId: string) {
-  const store = getDemoStore()
-  const existing = store.get(sessionId)
-  if (existing) return existing
+export async function getDemoStateBySessionId(sessionId: string) {
+  const existing = await getDemoStorage().getItem<StoredDemoState | DemoState>(demoStorageKey(sessionId))
+  if (existing) {
+    return deserializeDemoState(existing)
+  }
 
   const seeded = createDemoSeed(sessionId)
-  store.set(sessionId, seeded)
+  await persistDemoState(sessionId, seeded)
   return seeded
 }
 
-export function getDemoStateForUser(user: DemoAuthLikeUser | null | undefined) {
+export async function getDemoStateForUser(user: DemoAuthLikeUser | null | undefined) {
   const sessionId = getDemoSessionId(user)
   if (!sessionId) return null
-  return getDemoStateBySessionId(sessionId)
+  return await getDemoStateBySessionId(sessionId)
 }
 
 export function buildDemoHomeResponse(
@@ -883,17 +943,24 @@ export function buildDemoTransactionDetail(state: DemoState, id: string) {
   }
 }
 
-export function addDemoBalance(
+export async function addDemoBalance(
+  sessionId: string,
   state: DemoState,
   payload: { accountName: string, accountType: string, amount: number }
 ) {
   const account = ensureAccount(state, payload.accountName, payload.accountType)
   account.balance += payload.amount
   touchState(state)
+  await persistDemoState(sessionId, state)
   return { ok: true }
 }
 
-export function addDemoExpense(state: DemoState, userId: string, payload: DemoTransactionPayload) {
+export async function addDemoExpense(
+  sessionId: string,
+  state: DemoState,
+  userId: string,
+  payload: DemoTransactionPayload
+) {
   const now = new Date()
   const account = ensureAccount(state, payload.accountName || 'Cash Wallet')
   const category = ensureCategory(state, payload.categoryName, 'expense')
@@ -915,6 +982,7 @@ export function addDemoExpense(state: DemoState, userId: string, payload: DemoTr
   state.transactions.push(transaction)
   account.balance -= payload.amount
   touchState(state)
+  await persistDemoState(sessionId, state)
 
   return {
     ok: true,
@@ -922,7 +990,8 @@ export function addDemoExpense(state: DemoState, userId: string, payload: DemoTr
   }
 }
 
-export function updateDemoBudgetLimit(
+export async function updateDemoBudgetLimit(
+  sessionId: string,
   state: DemoState,
   payload: { limitAmount: number, warningThreshold?: number, criticalThreshold?: number }
 ) {
@@ -941,11 +1010,13 @@ export function updateDemoBudgetLimit(
   state.budget.alertThresholds = [warning, critical]
   state.budget.updatedAt = now
   touchState(state)
+  await persistDemoState(sessionId, state)
 
   return { ok: true }
 }
 
-export function updateDemoProfile(
+export async function updateDemoProfile(
+  sessionId: string,
   state: DemoState,
   payload: { name: string, email: string, username: string }
 ) {
@@ -957,13 +1028,15 @@ export function updateDemoProfile(
     isDemo: true
   }
   touchState(state)
+  await persistDemoState(sessionId, state)
 
   return {
     user: state.user
   }
 }
 
-export function updateDemoTransaction(
+export async function updateDemoTransaction(
+  sessionId: string,
   state: DemoState,
   id: string,
   payload: { accountName?: string, categoryName: string, amount: number, note?: string, occurredAt: string }
@@ -997,6 +1070,7 @@ export function updateDemoTransaction(
   txn.occurredAt = new Date(payload.occurredAt)
   txn.updatedAt = now
   touchState(state)
+  await persistDemoState(sessionId, state)
 
   return {
     ok: true,
@@ -1005,7 +1079,7 @@ export function updateDemoTransaction(
   }
 }
 
-export function deleteDemoTransaction(state: DemoState, id: string) {
+export async function deleteDemoTransaction(sessionId: string, state: DemoState, id: string) {
   const index = state.transactions.findIndex(item => item.id === id)
   if (index === -1) {
     throw createError({
@@ -1020,6 +1094,7 @@ export function deleteDemoTransaction(state: DemoState, id: string) {
     account.balance += txn.amount
   }
   touchState(state)
+  await persistDemoState(sessionId, state)
 
   return { ok: true }
 }

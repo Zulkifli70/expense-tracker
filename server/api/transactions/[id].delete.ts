@@ -34,7 +34,7 @@ function toMaybeObjectId(id: ObjectId | string | undefined) {
 
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const { userId, session, isDemo } = await requireAuthContext(event)
+  const { userId, session, isDemo, demoSessionId } = await requireAuthContext(event)
   const id = getRouterParam(event, 'id')
 
   if (isDemo) {
@@ -45,7 +45,14 @@ export default eventHandler(async (event) => {
       })
     }
 
-    const state = getDemoStateForUser(session.user)
+    if (!demoSessionId) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    const state = await getDemoStateForUser(session.user)
     if (!state) {
       throw createError({
         statusCode: 401,
@@ -53,7 +60,7 @@ export default eventHandler(async (event) => {
       })
     }
 
-    return deleteDemoTransaction(state, id)
+    return await deleteDemoTransaction(demoSessionId, state, id)
   }
 
   if (!id || !ObjectId.isValid(id)) {

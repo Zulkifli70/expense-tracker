@@ -1,7 +1,7 @@
 import { createDemoSession } from '../../utils/demo'
 
 export default eventHandler(async (event) => {
-  const demo = createDemoSession()
+  const demo = await createDemoSession()
 
   await setUserSession(event, {
     user: demo.user,

@@ -236,7 +236,7 @@ export default eventHandler(async (event) => {
   }
 
   if (isDemo) {
-    const state = getDemoStateForUser(session.user)
+    const state = await getDemoStateForUser(session.user)
     if (!state) {
       throw createError({
         statusCode: 401,

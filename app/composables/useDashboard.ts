@@ -4,6 +4,7 @@ import type { Notification } from "~/types";
 const _useDashboard = () => {
   const route = useRoute();
   const router = useRouter();
+  const { user, loggedIn } = useUserSession();
   const isNotificationsSlideoverOpen = ref(false);
   const notifications = useState<Notification[]>(
     "dashboard-notifications",
@@ -24,6 +25,12 @@ const _useDashboard = () => {
     ...notification,
     unread: !!notification.unread,
   });
+
+  const resetNotifications = () => {
+    notifications.value = [];
+    notificationsLoaded.value = false;
+    isNotificationsSlideoverOpen.value = false;
+  };
 
   const fetchNotifications = async (force = false) => {
     if (notificationsLoading.value) return;
@@ -136,6 +143,20 @@ const _useDashboard = () => {
   );
 
   watch(
+    () => user.value?.id || null,
+    async (nextUserId, previousUserId) => {
+      if (nextUserId === previousUserId) return;
+
+      resetNotifications();
+
+      if (loggedIn.value && nextUserId) {
+        await fetchNotifications(true);
+      }
+    },
+    { immediate: true },
+  );
+
+  watch(
     () => isNotificationsSlideoverOpen.value,
     (isOpen) => {
       if (!isOpen) return;
@@ -159,6 +180,7 @@ const _useDashboard = () => {
     unreadNotificationsCount,
     fetchNotifications,
     pushNotification,
+    resetNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
   };

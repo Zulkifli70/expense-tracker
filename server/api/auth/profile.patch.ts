@@ -10,7 +10,7 @@ const payloadSchema = z.object({
 })
 
 export default eventHandler(async (event) => {
-  const { userId, session, isDemo } = await requireAuthContext(event)
+  const { userId, session, isDemo, demoSessionId } = await requireAuthContext(event)
   const body = await readBody(event)
   const parsed = payloadSchema.safeParse(body)
 
@@ -22,7 +22,14 @@ export default eventHandler(async (event) => {
   }
 
   if (isDemo) {
-    const state = getDemoStateForUser(session.user)
+    if (!demoSessionId) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: 'Unauthorized'
+      })
+    }
+
+    const state = await getDemoStateForUser(session.user)
     if (!state) {
       throw createError({
         statusCode: 401,
@@ -30,7 +37,7 @@ export default eventHandler(async (event) => {
       })
     }
 
-    const result = updateDemoProfile(state, parsed.data)
+    const result = await updateDemoProfile(demoSessionId, state, parsed.data)
     await setUserSession(event, {
       user: result.user,
       loggedInAt: session.loggedInAt
