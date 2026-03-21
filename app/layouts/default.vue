@@ -226,16 +226,22 @@ onBeforeUnmount(() => {
         shortcut="ctrl_k"
       />
 
-      <div v-if="isDemo" class="px-4 pt-4 lg:px-6">
-        <UAlert
+      <div class="flex min-w-0 flex-1 flex-col">
+        <UBanner
+          v-if="isDemo"
           color="warning"
-          variant="soft"
-          title="Demo mode is active"
-          description="Changes stay in this temporary session only and reset after the browser is closed."
+          icon="i-lucide-flask-conical"
+          title="Demo mode is active. Changes stay temporary and reset when the browser is closed."
+          :ui="{
+            root: 'rounded-none border-x-0 border-t-0 border-b',
+            container: 'min-h-10 py-2 px-4 lg:px-6',
+            title: 'text-sm font-medium',
+          }"
+          close
         />
-      </div>
 
-      <slot />
+        <slot />
+      </div>
 
       <NotificationsSlideover />
     </UDashboardGroup>
