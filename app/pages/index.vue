@@ -98,7 +98,7 @@ async function startDemo() {
           </UButton>
           <UButton
             to="/login"
-            color="neutral"
+            color="primary"
             variant="ghost"
             class="hidden sm:inline-flex"
           >
@@ -171,7 +171,9 @@ async function startDemo() {
               :key="item.label"
               class="rounded-2xl border border-white/70 bg-white/75 px-4 py-5 shadow-sm"
             >
-              <p class="text-2xl font-semibold text-slate-950">{{ item.value }}</p>
+              <p class="text-2xl font-semibold text-slate-950">
+                {{ item.value }}
+              </p>
               <p class="mt-1 text-sm text-slate-500">{{ item.label }}</p>
             </div>
           </div>
@@ -187,7 +189,9 @@ async function startDemo() {
             <div class="rounded-[1.5rem] bg-slate-900 p-5 text-white">
               <div class="flex items-start justify-between gap-4">
                 <div>
-                  <p class="text-sm uppercase tracking-[0.28em] text-emerald-300">
+                  <p
+                    class="text-sm uppercase tracking-[0.28em] text-emerald-300"
+                  >
                     Overview
                   </p>
                   <h2 class="mt-3 text-3xl font-semibold">$12,480.00</h2>
@@ -209,15 +213,13 @@ async function startDemo() {
                     <span class="text-slate-300">Housing</span>
                     <span class="font-medium">$1,250</span>
                   </div>
-                  <UProgress
-                    :model-value="72"
-                    color="primary"
-                    class="mt-3"
-                  />
+                  <UProgress :model-value="72" color="primary" class="mt-3" />
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div class="rounded-2xl bg-emerald-500/12 p-4">
-                    <p class="text-xs uppercase tracking-[0.2em] text-emerald-200">
+                    <p
+                      class="text-xs uppercase tracking-[0.2em] text-emerald-200"
+                    >
                       Income
                     </p>
                     <p class="mt-3 text-2xl font-semibold">$4,800</p>
