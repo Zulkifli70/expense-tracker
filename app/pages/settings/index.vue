@@ -1,75 +1,112 @@
 <script setup lang="ts">
-import * as z from 'zod'
-import type { FormSubmitEvent } from '@nuxt/ui'
+import * as z from "zod";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-const fileRef = ref<HTMLInputElement>()
-const userProfile = useUserProfile()
-const { user: sessionUser } = useUserSession()
-const isDemo = computed(() => !!sessionUser.value?.isDemo)
+const userProfile = useUserProfile();
+const toast = useToast();
+const { user: sessionUser } = useUserSession();
+const { resetNotifications } = useDashboard();
+
+const isDemo = computed(() => !!sessionUser.value?.isDemo);
+const resetConfirmation = ref("");
+const resettingData = ref(false);
 
 const profileSchema = z.object({
-  name: z.string().min(2, 'Too short'),
-  email: z.string().email('Invalid email'),
-  username: z.string().min(2, 'Too short'),
-  avatar: z.string().optional(),
-  bio: z.string().optional()
-})
+  name: z.string().min(2, "Too short"),
+  email: z.string().email("Invalid email"),
+  username: z.string().min(2, "Too short"),
+});
 
-type ProfileSchema = z.output<typeof profileSchema>
+type ProfileSchema = z.output<typeof profileSchema>;
 
 const profile = reactive<Partial<ProfileSchema>>({
   name: userProfile.value.name,
   email: userProfile.value.email,
   username: userProfile.value.username,
-  avatar: userProfile.value.avatar,
-  bio: userProfile.value.bio
-})
-const toast = useToast()
+});
+
+watch(
+  () => userProfile.value,
+  (nextProfile) => {
+    profile.name = nextProfile.name;
+    profile.email = nextProfile.email;
+    profile.username = nextProfile.username;
+  },
+  { deep: true, immediate: true },
+);
+
 async function onSubmit(event: FormSubmitEvent<ProfileSchema>) {
   try {
-    await $fetch('/api/auth/profile', {
-      method: 'PATCH',
+    await $fetch("/api/auth/profile", {
+      method: "PATCH",
       body: {
         name: event.data.name,
         email: event.data.email,
-        username: event.data.username
-      }
-    })
+        username: event.data.username,
+      },
+    });
 
     userProfile.value = {
       ...userProfile.value,
-      ...event.data
-    }
+      ...event.data,
+    };
 
     toast.add({
-      title: 'Success',
-      description: 'Your settings have been updated.',
-      icon: 'i-lucide-check',
-      color: 'success'
-    })
-  }
-  catch (error: any) {
+      title: "Success",
+      description: "Your profile has been updated.",
+      icon: "i-lucide-check",
+      color: "success",
+    });
+  } catch (error: any) {
     toast.add({
-      title: 'Failed',
-      description: error?.data?.statusMessage || 'Failed to update profile',
-      icon: 'i-lucide-circle-alert',
-      color: 'error'
-    })
+      title: "Failed",
+      description: error?.data?.statusMessage || "Failed to update profile",
+      icon: "i-lucide-circle-alert",
+      color: "error",
+    });
   }
 }
 
-function onFileChange(e: Event) {
-  const input = e.target as HTMLInputElement
-
-  if (!input.files?.length) {
-    return
+async function onResetData() {
+  if (resetConfirmation.value !== "RESET") {
+    toast.add({
+      title: "Confirmation required",
+      description: 'Type "RESET" before deleting all data.',
+      color: "warning",
+    });
+    return;
   }
 
-  profile.avatar = URL.createObjectURL(input.files[0]!)
-}
+  if (!confirm("Delete all balances, transactions, budgets, notifications, and related user data?")) {
+    return;
+  }
 
-function onFileClick() {
-  fileRef.value?.click()
+  resettingData.value = true;
+
+  try {
+    await $fetch("/api/settings/reset-data", {
+      method: "DELETE",
+    });
+
+    resetConfirmation.value = "";
+    resetNotifications();
+    await refreshNuxtData();
+    await navigateTo("/settings");
+
+    toast.add({
+      title: "Data reset complete",
+      description: "Your account data has been cleared and is now back to a fresh state.",
+      color: "success",
+    });
+  } catch (error: any) {
+    toast.add({
+      title: "Failed",
+      description: error?.data?.statusMessage || "Failed to reset data",
+      color: "error",
+    });
+  } finally {
+    resettingData.value = false;
+  }
 }
 </script>
 
@@ -80,7 +117,7 @@ function onFileClick() {
       color="warning"
       variant="soft"
       title="Demo profile"
-      description="You can edit this profile to explore the flow, but the changes reset with the demo session."
+      description="Demo session stays temporary. Profile edits and reset data are disabled for demo users."
     />
 
     <UForm
@@ -91,7 +128,7 @@ function onFileClick() {
     >
       <UPageCard
         title="Profile"
-        description="These informations will be displayed publicly."
+        description="Manage the account identity used across this expense tracker."
         variant="naked"
         orientation="horizontal"
         class="mb-4"
@@ -109,7 +146,7 @@ function onFileClick() {
         <UFormField
           name="name"
           label="Name"
-          description="Will appear on receipts, invoices, and other communication."
+          description="Displayed in the dashboard greeting and account profile."
           required
           class="flex max-sm:flex-col justify-between items-start gap-4"
         >
@@ -122,7 +159,7 @@ function onFileClick() {
         <UFormField
           name="email"
           label="Email"
-          description="Used to sign in, for email receipts and product updates."
+          description="Used to sign in to your account."
           required
           class="flex max-sm:flex-col justify-between items-start gap-4"
         >
@@ -136,7 +173,7 @@ function onFileClick() {
         <UFormField
           name="username"
           label="Username"
-          description="Your unique username for logging in and your profile URL."
+          description="Your unique username for logging in."
           required
           class="flex max-sm:flex-col justify-between items-start gap-4"
         >
@@ -146,49 +183,51 @@ function onFileClick() {
             autocomplete="off"
           />
         </UFormField>
-        <USeparator />
-        <UFormField
-          name="avatar"
-          label="Avatar"
-          description="JPG, GIF or PNG. 1MB Max."
-          class="flex max-sm:flex-col justify-between sm:items-center gap-4"
-        >
-          <div class="flex flex-wrap items-center gap-3">
-            <UAvatar
-              :src="profile.avatar"
-              :alt="profile.name"
-              size="lg"
-            />
-            <UButton
-              label="Choose"
-              color="neutral"
-              @click="onFileClick"
-            />
-            <input
-              ref="fileRef"
-              type="file"
-              class="hidden"
-              accept=".jpg, .jpeg, .png, .gif"
-              @change="onFileChange"
-            >
-          </div>
-        </UFormField>
-        <USeparator />
-        <UFormField
-          name="bio"
-          label="Bio"
-          description="Brief description for your profile. URLs are hyperlinked."
-          class="flex max-sm:flex-col justify-between items-start gap-4"
-          :ui="{ container: 'w-full' }"
-        >
-          <UTextarea
-            v-model="profile.bio"
-            :rows="5"
-            autoresize
-            class="w-full"
-          />
-        </UFormField>
       </UPageCard>
     </UForm>
+
+    <UPageCard
+      title="Data Management"
+      description="Reset your finance data and return the dashboard to a fresh account state."
+      variant="naked"
+      class="mb-4"
+    />
+
+    <UPageCard class="border border-error/30 bg-gradient-to-br from-error/8 to-transparent">
+      <div class="space-y-4">
+        <div>
+          <p class="text-sm font-semibold text-highlighted">Reset all account data</p>
+          <p class="mt-1 text-sm text-muted">
+            This permanently deletes balances, transactions, categories, budgets,
+            notifications, and customer data for your account. Your login account
+            stays active.
+          </p>
+        </div>
+
+        <UFormField
+          label='Type "RESET" to confirm'
+          description="This action cannot be undone."
+        >
+          <UInput
+            v-model="resetConfirmation"
+            :disabled="isDemo || resettingData"
+            placeholder="RESET"
+            autocomplete="off"
+          />
+        </UFormField>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end">
+          <UButton
+            label="Reset Data"
+            color="error"
+            :disabled="isDemo || resetConfirmation !== 'RESET'"
+            :loading="resettingData"
+            @click="onResetData"
+          />
+        </div>
+      </template>
+    </UPageCard>
   </div>
 </template>

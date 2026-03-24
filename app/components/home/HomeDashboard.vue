@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as z from "zod";
-import type { DropdownMenuItem, FormSubmitEvent } from "@nuxt/ui";
+import type { FormSubmitEvent } from "@nuxt/ui";
 import type { HomeApiResponse, Period, Range } from "~/types";
 import HomeBudgetLimit from "~/components/home/HomeBudgetLimit.vue";
 import { formatIDRCurrency } from "~/composables/useHomeFinance";
@@ -172,24 +172,15 @@ const categoryOptions = computed(() => {
   return mergeExpenseCategories(names);
 });
 
-const items = [
-  [
-    {
-      label: "Add Balance",
-      icon: "i-lucide-wallet",
-      onSelect() {
-        openBalanceModal.value = true;
-      },
-    },
-    {
-      label: "Add Expense",
-      icon: "i-lucide-receipt",
-      onSelect() {
-        openExpenseModal.value = true;
-      },
-    },
-  ],
-] satisfies DropdownMenuItem[][];
+const hasBalanceAccounts = computed(
+  () => (homeData.value?.balance.accounts.length || 0) > 0,
+);
+const hasTransactions = computed(
+  () => (homeData.value?.latestTransactions.length || 0) > 0,
+);
+const isEmptyState = computed(
+  () => !hasBalanceAccounts.value && !hasTransactions.value,
+);
 
 const budgetMilestoneThresholds = [25, 50, 75, 90];
 const notifiedBudgetMilestones = useState<Record<string, number[]>>(
@@ -387,10 +378,6 @@ async function onSubmitEditLimit(event: FormSubmitEvent<LimitSchema>) {
               </UChip>
             </UButton>
           </UTooltip>
-
-          <UDropdownMenu :items="items">
-            <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
-          </UDropdownMenu>
         </template>
       </UDashboardNavbar>
 
@@ -421,22 +408,90 @@ async function onSubmitEditLimit(event: FormSubmitEvent<LimitSchema>) {
           </p>
         </div>
       </div>
-      <HomeStats :stats="homeData?.stats || []" />
-      <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <HomeChart
-          :period="period"
-          :chart="homeData?.chart || []"
-          :total="homeData?.summary.currentSpending || 0"
-        />
-        <HomeBudgetLimit
-          :budget="homeData?.budget"
-          :current-spending="homeData?.summary.currentSpending || 0"
-          @edit-limit="openLimitModal = true"
-        />
+      <div
+        v-if="isEmptyState"
+        class="flex min-h-[calc(100vh-18rem)] items-center justify-center"
+      >
+        <div
+          class="mx-auto flex w-full max-w-2xl flex-col items-center rounded-[2rem] border border-dashed border-primary/30 bg-gradient-to-br from-primary/8 via-elevated to-primary/5 px-6 py-12 text-center shadow-sm"
+        >
+          <div
+            class="flex size-16 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-inset ring-primary/15"
+          >
+            <UIcon name="i-lucide-wallet-minimal" class="size-8" />
+          </div>
+          <h2 class="mt-6 text-2xl font-semibold text-highlighted sm:text-3xl">
+            Start tracking your money from here
+          </h2>
+          <p class="mt-3 max-w-xl text-sm leading-6 text-muted sm:text-base">
+            Add your first balance or record your first expense to build your
+            home dashboard.
+          </p>
+          <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+            <UButton
+              size="xl"
+              icon="i-lucide-wallet"
+              class="justify-center rounded-full px-6"
+              @click="openBalanceModal = true"
+            >
+              Add First Balance
+            </UButton>
+            <UButton
+              size="xl"
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-receipt"
+              class="justify-center rounded-full px-6"
+              @click="openExpenseModal = true"
+            >
+              Add New Expense
+            </UButton>
+          </div>
+        </div>
       </div>
-      <HomeSales :rows="homeData?.latestTransactions || []" />
+
+      <template v-else>
+        <HomeStats :stats="homeData?.stats || []" />
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <HomeChart
+            :period="period"
+            :chart="homeData?.chart || []"
+            :total="homeData?.summary.currentSpending || 0"
+          />
+          <HomeBudgetLimit
+            :budget="homeData?.budget"
+            :current-spending="homeData?.summary.currentSpending || 0"
+            @edit-limit="openLimitModal = true"
+          />
+        </div>
+        <HomeSales :rows="homeData?.latestTransactions || []" />
+      </template>
     </template>
   </UDashboardPanel>
+
+  <div
+    class="pointer-events-none fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3"
+  >
+    <UTooltip text="Add Balance">
+      <UButton
+        icon="i-lucide-wallet"
+        color="neutral"
+        variant="soft"
+        size="lg"
+        class="pointer-events-auto rounded-full shadow-lg shadow-black/10"
+        @click="openBalanceModal = true"
+      />
+    </UTooltip>
+
+    <UTooltip text="Add New Expense">
+      <UButton
+        icon="i-lucide-plus"
+        size="xl"
+        class="pointer-events-auto rounded-full shadow-xl shadow-primary/20"
+        @click="openExpenseModal = true"
+      />
+    </UTooltip>
+  </div>
 
   <UModal v-model:open="openBalanceModal" title="Add Balance">
     <template #body>

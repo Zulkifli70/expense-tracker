@@ -79,10 +79,13 @@ const previousMonthQuery = computed(() => ({
   end: previousMonthComparableEnd.toISOString(),
 }));
 
-const { data: previousMonthData } = await useFetch<HomeApiResponse>("/api/home", {
-  query: previousMonthQuery,
-  key: "reports-last-month-data",
-});
+const { data: previousMonthData } = await useFetch<HomeApiResponse>(
+  "/api/home",
+  {
+    query: previousMonthQuery,
+    key: "reports-last-month-data",
+  },
+);
 
 const summary = computed(() => ({
   totalBalance: homeData.value?.summary.totalBalance || 0,
@@ -133,7 +136,9 @@ const vsLastMonthDifference = computed(
 
 const vsLastMonthPercent = computed(() => {
   if (!lastMonthSpending.value) return summary.value.currentSpending ? 100 : 0;
-  return Math.round((vsLastMonthDifference.value / lastMonthSpending.value) * 100);
+  return Math.round(
+    (vsLastMonthDifference.value / lastMonthSpending.value) * 100,
+  );
 });
 
 const topCategoryShare = computed(() => {
@@ -314,7 +319,7 @@ const stats = computed(() => [
               :color="preset === 'month' ? 'primary' : 'neutral'"
               @click="preset = 'month'"
             />
-            <UButton
+            <!-- <UButton
               label="Quarterly"
               size="xs"
               :variant="preset === 'quarter' ? 'solid' : 'ghost'"
@@ -327,10 +332,8 @@ const stats = computed(() => [
               :variant="preset === 'year' ? 'solid' : 'ghost'"
               :color="preset === 'year' ? 'primary' : 'neutral'"
               @click="preset = 'year'"
-            />
+            /> -->
           </div>
-
-          <UButton label="Export PDF" icon="i-lucide-download" size="sm" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -343,7 +346,9 @@ const stats = computed(() => [
           <span class="text-primary">Detailed Analytics</span>
         </div>
 
-        <h1 class="text-3xl font-semibold text-highlighted">Analytics Overview</h1>
+        <h1 class="text-3xl font-semibold text-highlighted">
+          Analytics Overview
+        </h1>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <UCard
@@ -439,7 +444,11 @@ const stats = computed(() => [
                 class="rounded-lg border border-default/60 p-3"
               >
                 <div class="flex items-start gap-2">
-                  <UIcon :name="item.icon" class="size-4 mt-0.5" :class="item.iconClass" />
+                  <UIcon
+                    :name="item.icon"
+                    class="size-4 mt-0.5"
+                    :class="item.iconClass"
+                  />
                   <div>
                     <p class="text-sm font-medium text-highlighted">
                       {{ item.title }}
