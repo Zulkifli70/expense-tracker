@@ -188,7 +188,7 @@ async function onTryDemo() {
             <div class="rounded-3xl border border-white/10 bg-white/5 p-5">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-sm text-slate-400">Monthly balance</p>
+                  <p class="text-sm text-slate-400">Total Balance</p>
                   <p class="mt-2 text-3xl font-semibold">$12,480.00</p>
                 </div>
                 <div
@@ -203,7 +203,9 @@ async function onTryDemo() {
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="rounded-3xl border border-white/10 bg-white/5 p-5">
                 <p class="text-sm text-slate-400">Expense categories</p>
-                <p class="mt-2 text-2xl font-semibold">12 active</p>
+                <p class="mt-2 text-2xl font-semibold">
+                  7 Different Categories
+                </p>
               </div>
               <div class="rounded-3xl border border-white/10 bg-white/5 p-5">
                 <p class="text-sm text-slate-400">Budget alerts</p>
@@ -222,14 +224,18 @@ async function onTryDemo() {
             >
               {{ mode === "login" ? "Welcome back" : "Create your account" }}
             </p>
-            <h2 class="mt-3 text-3xl font-semibold text-slate-950 dark:text-white">
+            <h2
+              class="mt-3 text-3xl font-semibold text-slate-950 dark:text-white"
+            >
               {{
                 mode === "login"
                   ? "Log in to your dashboard"
                   : "Start tracking your finances"
               }}
             </h2>
-            <p class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            <p
+              class="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400"
+            >
               {{
                 mode === "login"
                   ? "Use your registered account to continue where you left off."
@@ -364,10 +370,14 @@ async function onTryDemo() {
             <div
               class="mt-6 rounded-2xl border border-emerald-200/70 bg-emerald-50/80 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10"
             >
-              <p class="text-sm font-medium text-emerald-900 dark:text-emerald-100">
+              <p
+                class="text-sm font-medium text-emerald-900 dark:text-emerald-100"
+              >
                 Try the product with sample data
               </p>
-              <p class="mt-1 text-sm leading-6 text-emerald-800/80 dark:text-emerald-100/75">
+              <p
+                class="mt-1 text-sm leading-6 text-emerald-800/80 dark:text-emerald-100/75"
+              >
                 Demo data is temporary, never saved to the database, and resets
                 when you close the browser.
               </p>

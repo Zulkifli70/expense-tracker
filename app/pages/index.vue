@@ -157,8 +157,8 @@ async function startDemo() {
             <UButton
               to="/login"
               size="xl"
-              color="neutral"
-              variant="subtle"
+              color="primary"
+              variant="outline"
               class="rounded-full px-7"
             >
               Log in
@@ -208,13 +208,6 @@ async function startDemo() {
               </div>
 
               <div class="mt-8 space-y-4">
-                <div class="rounded-2xl bg-white/5 p-4">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-300">Housing</span>
-                    <span class="font-medium">$1,250</span>
-                  </div>
-                  <UProgress :model-value="72" color="primary" class="mt-3" />
-                </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                   <div class="rounded-2xl bg-emerald-500/12 p-4">
                     <p

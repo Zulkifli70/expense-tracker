@@ -4,7 +4,10 @@ import * as z from "zod";
 import type { DropdownMenuItem, FormSubmitEvent, TableColumn } from "@nuxt/ui";
 import type { TransactionListItem, TransactionsApiResponse } from "~/types";
 import { formatIDRCurrency } from "~/composables/useHomeFinance";
-import { DEFAULT_EXPENSE_CATEGORIES, mergeExpenseCategories } from "~~/shared/constants/expense-categories";
+import {
+  DEFAULT_EXPENSE_CATEGORIES,
+  mergeExpenseCategories,
+} from "~~/shared/constants/expense-categories";
 
 const toast = useToast();
 const { pushNotification } = useDashboard();
@@ -14,7 +17,12 @@ const pageSize = ref(10);
 const search = ref("");
 const category = ref("all");
 const period = ref<
-  "today" | "yesterday" | "this_week" | "last_30_days" | "this_month" | "all_time"
+  | "today"
+  | "yesterday"
+  | "this_week"
+  | "last_30_days"
+  | "this_month"
+  | "all_time"
 >("this_month");
 
 const openExpenseModal = ref(false);
@@ -66,7 +74,8 @@ watch(
 );
 
 const categoryOptions = computed(() => {
-  const dynamic = data.value?.categories?.filter((item) => item !== "all") || [];
+  const dynamic =
+    data.value?.categories?.filter((item) => item !== "all") || [];
   return ["all", ...mergeExpenseCategories(dynamic)];
 });
 const tableRows = computed(() => data.value?.items || []);
@@ -102,7 +111,8 @@ const tableColumns: TableColumn<TransactionListItem>[] = [
   {
     accessorKey: "date",
     header: "Date",
-    cell: ({ row }) => buildClickableCell(row.original.id, formatDateLabel(row.original.date)),
+    cell: ({ row }) =>
+      buildClickableCell(row.original.id, formatDateLabel(row.original.date)),
   },
   {
     accessorKey: "category",
@@ -118,7 +128,8 @@ const tableColumns: TableColumn<TransactionListItem>[] = [
   {
     accessorKey: "description",
     header: "Description",
-    cell: ({ row }) => buildClickableCell(row.original.id, row.original.description || "-"),
+    cell: ({ row }) =>
+      buildClickableCell(row.original.id, row.original.description || "-"),
   },
   {
     accessorKey: "amount",
@@ -130,7 +141,8 @@ const tableColumns: TableColumn<TransactionListItem>[] = [
         "button",
         {
           type: "button",
-          class: "w-full text-right font-semibold transition hover:text-primary",
+          class:
+            "w-full text-right font-semibold transition hover:text-primary",
           onClick: () => openTransactionDetail(row.original.id),
         },
         [h("span", { class: "text-highlighted" }, formatted)],
@@ -244,52 +256,19 @@ function resetFilters() {
   period.value = "this_month";
 }
 
-function exportCSV() {
-  const rows = tableRows.value;
-  if (!rows.length) {
-    toast.add({
-      title: "No data",
-      description: "There are no transactions to export on this page.",
-      color: "warning",
-    });
-    return;
-  }
-
-  const csvRows = [
-    ["date", "account", "category", "description", "type", "amount"],
-    ...rows.map((row) => [
-      row.date,
-      row.accountName,
-      row.category,
-      row.description,
-      row.kind,
-      row.amount.toString(),
-    ]),
-  ];
-  const csv = csvRows
-    .map((columns) =>
-      columns.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","),
-    )
-    .join("\n");
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `transactions-page-${page.value}.csv`;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
-
 async function onSubmitAddExpense(event: FormSubmitEvent<ExpenseSchema>) {
   loadingExpense.value = true;
   try {
-    const created = await $fetch<{ ok: boolean; id?: string }>("/api/home/expenses", {
-      method: "POST",
-      body: {
-        ...event.data,
-        occurredAt: new Date(event.data.occurredAt).toISOString(),
+    const created = await $fetch<{ ok: boolean; id?: string }>(
+      "/api/home/expenses",
+      {
+        method: "POST",
+        body: {
+          ...event.data,
+          occurredAt: new Date(event.data.occurredAt).toISOString(),
+        },
       },
-    });
+    );
     toast.add({
       title: "Expense saved",
       description: "Transaction has been added.",
@@ -390,13 +369,6 @@ async function onDeleteTransaction(row: TransactionListItem) {
         <template #right>
           <div class="flex items-center gap-2">
             <UButton
-              label="Export CSV"
-              icon="i-lucide-download"
-              color="neutral"
-              variant="outline"
-              @click="exportCSV"
-            />
-            <UButton
               label="Add Transaction"
               icon="i-lucide-circle-plus"
               color="primary"
@@ -442,13 +414,19 @@ async function onDeleteTransaction(row: TransactionListItem) {
         </div>
       </div>
 
-      <div class="inline-flex items-start gap-3 rounded-lg border border-default bg-elevated/40 px-4 py-3">
+      <div
+        class="inline-flex items-start gap-3 rounded-lg border border-default bg-elevated/40 px-4 py-3"
+      >
         <div>
-          <p class="text-[11px] uppercase tracking-[0.12em] text-muted">Visible Total</p>
+          <p class="text-[11px] uppercase tracking-[0.12em] text-muted">
+            Visible Total
+          </p>
           <p class="text-xl font-semibold tabular-nums text-highlighted">
             {{ visibleTotalLabel }}
           </p>
-          <p class="text-xs text-muted">Based on current filters and current page.</p>
+          <p class="text-xs text-muted">
+            Based on current filters and current page.
+          </p>
         </div>
       </div>
 
@@ -470,7 +448,8 @@ async function onDeleteTransaction(row: TransactionListItem) {
         class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-default pt-4"
       >
         <div class="text-sm text-muted">
-          Showing {{ fromIndex }} to {{ toIndex }} of {{ data?.total || 0 }} transactions
+          Showing {{ fromIndex }} to {{ toIndex }} of
+          {{ data?.total || 0 }} transactions
         </div>
         <div class="flex items-center gap-3">
           <USelect v-model="pageSize" :items="[10, 20, 30]" class="w-20" />
@@ -478,7 +457,7 @@ async function onDeleteTransaction(row: TransactionListItem) {
             :default-page="page"
             :items-per-page="data?.pageSize || pageSize"
             :total="data?.total || 0"
-            @update:page="(p: number) => page = p"
+            @update:page="(p: number) => (page = p)"
           />
         </div>
       </div>
