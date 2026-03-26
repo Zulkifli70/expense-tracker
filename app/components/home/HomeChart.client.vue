@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import {
-  format,
-} from "date-fns";
+import { format } from "date-fns";
 import {
   VisXYContainer,
   VisLine,
@@ -37,8 +35,10 @@ const data = computed<DataRecord[]>(() =>
 const x = (_: DataRecord, i: number) => i;
 const y = (d: DataRecord) => d.amount;
 
-const total = computed(() =>
-  props.total || data.value.reduce((acc: number, { amount }) => acc + amount, 0),
+const total = computed(
+  () =>
+    props.total ||
+    data.value.reduce((acc: number, { amount }) => acc + amount, 0),
 );
 
 const formatNumber = new Intl.NumberFormat("id-ID", {
@@ -76,7 +76,9 @@ const template = (d: DataRecord) =>
   >
     <template #header>
       <div>
-        <p class="text-xs text-muted uppercase mb-1.5">Spending (This Month)</p>
+        <p class="text-xs text-muted uppercase mb-1.5">
+          Daily Spending (This Month)
+        </p>
         <p class="text-3xl text-highlighted font-semibold">
           {{ formatNumber(total) }}
         </p>
