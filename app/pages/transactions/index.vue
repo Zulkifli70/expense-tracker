@@ -366,16 +366,6 @@ async function onDeleteTransaction(row: TransactionListItem) {
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
-        <template #right>
-          <div class="flex items-center gap-2">
-            <UButton
-              label="Add Transaction"
-              icon="i-lucide-circle-plus"
-              color="primary"
-              @click="openExpenseModal = true"
-            />
-          </div>
-        </template>
       </UDashboardNavbar>
     </template>
 
@@ -463,6 +453,19 @@ async function onDeleteTransaction(row: TransactionListItem) {
       </div>
     </template>
   </UDashboardPanel>
+
+  <div
+    class="pointer-events-none fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3"
+  >
+    <UTooltip text="Add Transaction">
+      <UButton
+        icon="i-lucide-plus"
+        size="xl"
+        class="pointer-events-auto rounded-full shadow-xl shadow-primary/20"
+        @click="openExpenseModal = true"
+      />
+    </UTooltip>
+  </div>
 
   <UModal v-model:open="openExpenseModal" title="Add Expense">
     <template #body>
