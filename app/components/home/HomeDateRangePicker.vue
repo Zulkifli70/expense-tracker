@@ -38,29 +38,51 @@ const toCalendarDate = (date: Date) => {
   )
 }
 
+const toSelectedRange = (value: { start: { toDate: (timeZone: string) => Date }, end: { toDate: (timeZone: string) => Date } }): Range => ({
+  start: startOfDay(value.start.toDate(getLocalTimeZone())),
+  end: endOfDay(value.end.toDate(getLocalTimeZone()))
+})
+
+const isSameDateRange = (left: Range, right: Range) => {
+  return left.start.getTime() === right.start.getTime() && left.end.getTime() === right.end.getTime()
+}
+
 const calendarRange = ref<any>({
   start: toCalendarDate(selected.value.start),
   end: toCalendarDate(selected.value.end)
 })
 
 watch(
-  selected,
+  () => [selected.value.start.getTime(), selected.value.end.getTime()],
   (value) => {
-    calendarRange.value = {
-      start: value.start ? toCalendarDate(value.start) : undefined,
-      end: value.end ? toCalendarDate(value.end) : undefined
+    const nextRange = {
+      start: toCalendarDate(selected.value.start),
+      end: toCalendarDate(selected.value.end)
     }
+
+    const currentRange = calendarRange.value
+    const hasSameStart = currentRange?.start?.compare?.(nextRange.start) === 0
+    const hasSameEnd = currentRange?.end?.compare?.(nextRange.end) === 0
+
+    if (hasSameStart && hasSameEnd) {
+      return
+    }
+
+    calendarRange.value = nextRange
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 )
 
 watch(calendarRange, (newValue) => {
   if (!newValue.start || !newValue.end) return
 
-  selected.value = {
-    start: startOfDay(newValue.start.toDate(getLocalTimeZone())),
-    end: endOfDay(newValue.end.toDate(getLocalTimeZone()))
+  const nextSelectedRange = toSelectedRange(newValue)
+
+  if (isSameDateRange(selected.value, nextSelectedRange)) {
+    return
   }
+
+  selected.value = nextSelectedRange
 }, { deep: true })
 
 const matchesPresetRange = (range: PresetRange) => {
