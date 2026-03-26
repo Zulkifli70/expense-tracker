@@ -9,14 +9,25 @@ const df = new DateFormatter('en-US', {
 
 const selected = defineModel<Range>({ required: true })
 
-const ranges = [
-  { label: 'This month', thisMonth: true },
-  { label: 'Last 7 days', days: 7 },
-  { label: 'Last 14 days', days: 14 },
-  { label: 'Last 30 days', days: 30 },
-  { label: 'Last 3 months', months: 3 },
-  { label: 'Last 6 months', months: 6 },
-  { label: 'Last year', years: 1 }
+type PresetRange = {
+  key: string
+  label: string
+  days?: number
+  months?: number
+  years?: number
+  thisMonth?: boolean
+  custom?: boolean
+}
+
+const ranges: PresetRange[] = [
+  { key: 'this-month', label: 'This month', thisMonth: true },
+  { key: 'last-7-days', label: 'Last 7 days', days: 7 },
+  { key: 'last-14-days', label: 'Last 14 days', days: 14 },
+  { key: 'last-30-days', label: 'Last 30 days', days: 30 },
+  { key: 'last-3-months', label: 'Last 3 months', months: 3 },
+  { key: 'last-6-months', label: 'Last 6 months', months: 6 },
+  { key: 'last-year', label: 'Last year', years: 1 },
+  { key: 'custom', label: 'Custom range', custom: true }
 ]
 
 const toCalendarDate = (date: Date) => {
@@ -27,24 +38,38 @@ const toCalendarDate = (date: Date) => {
   )
 }
 
-const calendarRange = computed({
-  get: () => ({
-    start: selected.value.start ? toCalendarDate(selected.value.start) : undefined,
-    end: selected.value.end ? toCalendarDate(selected.value.end) : undefined
-  }),
-  set: (newValue: { start: CalendarDate | null, end: CalendarDate | null }) => {
-    selected.value = {
-      start: newValue.start ? startOfDay(newValue.start.toDate(getLocalTimeZone())) : startOfDay(new Date()),
-      end: newValue.end ? endOfDay(newValue.end.toDate(getLocalTimeZone())) : endOfDay(new Date())
-    }
-  }
+const calendarRange = ref<any>({
+  start: toCalendarDate(selected.value.start),
+  end: toCalendarDate(selected.value.end)
 })
 
-const isRangeSelected = (range: { days?: number, months?: number, years?: number, thisMonth?: boolean }) => {
+watch(
+  selected,
+  (value) => {
+    calendarRange.value = {
+      start: value.start ? toCalendarDate(value.start) : undefined,
+      end: value.end ? toCalendarDate(value.end) : undefined
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+watch(calendarRange, (newValue) => {
+  if (!newValue.start || !newValue.end) return
+
+  selected.value = {
+    start: startOfDay(newValue.start.toDate(getLocalTimeZone())),
+    end: endOfDay(newValue.end.toDate(getLocalTimeZone()))
+  }
+}, { deep: true })
+
+const matchesPresetRange = (range: PresetRange) => {
   if (!selected.value.start || !selected.value.end) return false
 
   const currentDate = today(getLocalTimeZone())
   let startDate = currentDate.copy()
+
+  if (range.custom) return false
 
   if (range.thisMonth) {
     const now = new Date()
@@ -67,7 +92,16 @@ const isRangeSelected = (range: { days?: number, months?: number, years?: number
   return selectedStart.compare(startDate) === 0 && selectedEnd.compare(currentDate) === 0
 }
 
-const selectRange = (range: { days?: number, months?: number, years?: number, thisMonth?: boolean }) => {
+const activePresetKey = computed(() => {
+  const matchedPreset = ranges.find(range => !range.custom && matchesPresetRange(range))
+  return matchedPreset?.key || 'custom'
+})
+
+const isRangeSelected = (range: PresetRange) => activePresetKey.value === range.key
+
+const selectRange = (range: PresetRange) => {
+  if (range.custom) return
+
   if (range.thisMonth) {
     const now = new Date()
     selected.value = {
@@ -138,12 +172,22 @@ const selectRange = (range: { days?: number, months?: number, years?: number, th
           />
         </div>
 
-        <UCalendar
-          v-model="calendarRange"
-          class="p-2"
-          :number-of-months="2"
-          range
-        />
+        <div class="p-2 space-y-3">
+          <div class="px-1">
+            <p class="text-sm font-medium text-highlighted">
+              {{ activePresetKey === 'custom' ? 'Custom date range' : 'Preset date range' }}
+            </p>
+            <p class="text-xs text-muted">
+              Pick any start and end date from the calendar.
+            </p>
+          </div>
+
+          <UCalendar
+            v-model="calendarRange"
+            :number-of-months="2"
+            range
+          />
+        </div>
       </div>
     </template>
   </UPopover>
