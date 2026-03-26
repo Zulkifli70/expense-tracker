@@ -797,12 +797,6 @@ export function buildDemoHomeResponse(
     },
     stats: [
       {
-        title: 'Total Balance',
-        icon: 'i-lucide-wallet',
-        value: totalBalance,
-        variation: 0
-      },
-      {
         title: 'Current Spending',
         icon: 'i-lucide-shopping-cart',
         value: currentSpending,

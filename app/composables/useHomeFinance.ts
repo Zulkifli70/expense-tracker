@@ -53,12 +53,6 @@ export function useHomeFinance() {
 
     return [
       {
-        title: "Total Balance",
-        icon: "i-lucide-wallet",
-        value: formatIDRCurrency(totalBalance.value),
-        variation: trend,
-      },
-      {
         title: "Current Spending",
         icon: "i-lucide-shopping-cart",
         value: formatIDRCurrency(currentSpending.value),

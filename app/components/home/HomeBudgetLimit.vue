@@ -12,6 +12,9 @@ const emit = defineEmits<{
 
 const monthlyLimit = computed(() => props.budget?.limit || 0);
 const currentSpending = computed(() => props.currentSpending || 0);
+const remainingBudget = computed(() =>
+  Math.max(monthlyLimit.value - currentSpending.value, 0),
+);
 
 const progress = computed(() =>
   Math.min(
@@ -96,14 +99,29 @@ const formatCurrency = new Intl.NumberFormat("id-ID", {
           @click="emit('editLimit')"
         />
 
-        <p class="text-4xl font-bold tracking-tight text-highlighted">
-          {{ formatCurrency(currentSpending) }}
-        </p>
-        <p
-          class="text-xs font-semibold tracking-[0.2em] text-primary uppercase"
-        >
-          CURRENT
-        </p>
+        <div class="space-y-3">
+          <!-- <div>
+            <p class="text-4xl font-bold tracking-tight text-highlighted">
+              {{ formatCurrency(currentSpending) }}
+            </p>
+            <p
+              class="text-xs font-semibold tracking-[0.2em] text-primary uppercase"
+            >
+              CURRENT
+            </p>
+          </div> -->
+
+          <div>
+            <p class="text-2xl font-semibold tracking-tight text-toned">
+              {{ formatCurrency(remainingBudget) }}
+            </p>
+            <p
+              class="text-[11px] font-semibold tracking-[0.16em] text-primary uppercase"
+            >
+              Remaining Limit
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 

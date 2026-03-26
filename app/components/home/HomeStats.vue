@@ -12,10 +12,16 @@ const stats = computed(() =>
     valueFormatted: formatIDRCurrency(item.value),
   })),
 );
+
+const gridClass = computed(() => {
+  if (stats.value.length <= 2) return "lg:grid-cols-2";
+  if (stats.value.length === 3) return "lg:grid-cols-3";
+  return "lg:grid-cols-4";
+});
 </script>
 
 <template>
-  <UPageGrid class="lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-px">
+  <UPageGrid :class="[gridClass, 'gap-4 sm:gap-6 lg:gap-px']">
     <UPageCard
       v-for="(stat, index) in stats"
       :key="index"
