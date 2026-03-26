@@ -464,17 +464,6 @@ async function onSubmitEditLimit(event: FormSubmitEvent<LimitSchema>) {
   <div
     class="pointer-events-none fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3"
   >
-    <UTooltip text="Add Balance">
-      <UButton
-        icon="i-lucide-wallet"
-        color="neutral"
-        variant="soft"
-        size="lg"
-        class="pointer-events-auto rounded-full shadow-lg shadow-black/10"
-        @click="openBalanceModal = true"
-      />
-    </UTooltip>
-
     <UTooltip text="Add New Expense">
       <UButton
         icon="i-lucide-plus"
