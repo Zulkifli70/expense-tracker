@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import * as z from "zod";
 import type { FormSubmitEvent } from "@nuxt/ui";
-import type { HomeApiResponse, Period, Range } from "~/types";
+import type { HomeApiResponse } from "~/types";
 import HomeBudgetLimit from "~/components/home/HomeBudgetLimit.vue";
 import { formatIDRCurrency } from "~/composables/useHomeFinance";
 import { mergeExpenseCategories } from "~~/shared/constants/expense-categories";
@@ -91,14 +91,13 @@ const loadingBalance = ref(false);
 const loadingExpense = ref(false);
 const loadingLimit = ref(false);
 
-const range = shallowRef<Range>(getDefaultRangeByLocalNow());
-const period = ref<Period>("daily");
+const defaultRange = getDefaultRangeByLocalNow();
 
-const query = computed(() => ({
-  period: period.value,
-  start: range.value.start.toISOString(),
-  end: range.value.end.toISOString(),
-}));
+const query = {
+  period: "daily" as const,
+  start: defaultRange.start.toISOString(),
+  end: defaultRange.end.toISOString(),
+};
 
 const { data: homeData, refresh } = await useFetch<HomeApiResponse>(
   "/api/home",
@@ -380,13 +379,6 @@ async function onSubmitEditLimit(event: FormSubmitEvent<LimitSchema>) {
           </UTooltip>
         </template>
       </UDashboardNavbar>
-
-      <UDashboardToolbar>
-        <template #left>
-          <HomeDateRangePicker v-model="range" class="-ms-1" />
-          <HomePeriodSelect v-model="period" :range="range" />
-        </template>
-      </UDashboardToolbar>
     </template>
 
     <template #body>
@@ -454,7 +446,7 @@ async function onSubmitEditLimit(event: FormSubmitEvent<LimitSchema>) {
         <HomeStats :stats="homeData?.stats || []" />
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <HomeChart
-            :period="period"
+            period="daily"
             :chart="homeData?.chart || []"
             :total="homeData?.summary.currentSpending || 0"
           />

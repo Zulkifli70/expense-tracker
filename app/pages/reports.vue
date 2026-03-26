@@ -3,55 +3,25 @@ import {
   addDays,
   endOfMonth,
   startOfMonth,
-  startOfYear,
   subMonths,
 } from "date-fns";
 import type { HomeApiResponse, Period, Range } from "~/types";
 import { formatIDRCurrency } from "~/composables/useHomeFinance";
 
-type Preset = "month" | "quarter" | "year";
+function getDefaultRangeByLocalNow(): Range {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const day = now.getDate();
 
-const preset = ref<Preset>("month");
+  return {
+    start: new Date(year, month, 1, 0, 0, 0, 0),
+    end: new Date(year, month, day, 23, 59, 59, 999),
+  };
+}
 
-const range = shallowRef<Range>({
-  start: startOfMonth(new Date()),
-  end: new Date(),
-});
-
-const period = computed<Period>(() => {
-  if (preset.value === "year") return "monthly";
-  if (preset.value === "quarter") return "weekly";
-  return "daily";
-});
-
-watch(
-  preset,
-  (value) => {
-    const now = new Date();
-
-    if (value === "year") {
-      range.value = {
-        start: startOfYear(now),
-        end: now,
-      };
-      return;
-    }
-
-    if (value === "quarter") {
-      range.value = {
-        start: startOfMonth(subMonths(now, 2)),
-        end: now,
-      };
-      return;
-    }
-
-    range.value = {
-      start: startOfMonth(now),
-      end: now,
-    };
-  },
-  { immediate: true },
-);
+const range = shallowRef<Range>(getDefaultRangeByLocalNow());
+const period = ref<Period>("daily");
 
 const query = computed(() => ({
   period: period.value,
@@ -309,33 +279,14 @@ const stats = computed(() => [
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
-
-        <template #right>
-          <div class="flex items-center gap-2">
-            <UButton
-              label="This Month"
-              size="xs"
-              :variant="preset === 'month' ? 'solid' : 'ghost'"
-              :color="preset === 'month' ? 'primary' : 'neutral'"
-              @click="preset = 'month'"
-            />
-            <!-- <UButton
-              label="Quarterly"
-              size="xs"
-              :variant="preset === 'quarter' ? 'solid' : 'ghost'"
-              :color="preset === 'quarter' ? 'primary' : 'neutral'"
-              @click="preset = 'quarter'"
-            />
-            <UButton
-              label="Yearly"
-              size="xs"
-              :variant="preset === 'year' ? 'solid' : 'ghost'"
-              :color="preset === 'year' ? 'primary' : 'neutral'"
-              @click="preset = 'year'"
-            /> -->
-          </div>
-        </template>
       </UDashboardNavbar>
+
+      <UDashboardToolbar>
+        <template #left>
+          <HomeDateRangePicker v-model="range" class="-ms-1" />
+          <HomePeriodSelect v-model="period" :range="range" />
+        </template>
+      </UDashboardToolbar>
     </template>
 
     <template #body>
